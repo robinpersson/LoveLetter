@@ -143,6 +143,12 @@ func (u *User) Read() {
 			u.PlayPickedCard()
 		case GuardGuess:
 			u.GuessCard(message.GuardGuess.PlayerOrder, message.GuardGuess.Card)
+		case PriestRequest:
+			u.ViewOpponentCard(message.PriestPlayer)
+		case PriestDiscard:
+			//u.Supervisor.Broadcast(message)
+			time.Sleep(time.Millisecond * 500)
+			u.Supervisor.NextPlayer(u.Order)
 		}
 
 	}
@@ -152,16 +158,16 @@ func (u *User) GuessCard(playerOrder, cardNumber int) {
 	player := u.Supervisor.GetPlayerByOrder(playerOrder)
 
 	playerCard := *player.Cards.Current
+	guessedCard := card.GetCardByValue(cardNumber)
 
 	if playerCard.Value() == cardNumber {
 		//Right guess
-		//player.Eliminated = true
-		u.Supervisor.BroadcastText(fmt.Sprintf("guessed that %s had %s, which was correct", player.Name, playerCard.ShortString()), u.Name)
+		u.Supervisor.BroadcastText(fmt.Sprintf("guessed that %s had %s, which was correct", player.Name, guessedCard.ToString()), u.Name)
 		time.Sleep(time.Millisecond * 100)
 		u.Supervisor.EliminatePlayer(player)
 
 	} else {
-		u.Supervisor.BroadcastText(fmt.Sprintf("guessed that %s had %s, which was incorrect", player.Name, playerCard.ShortString()), u.Name)
+		u.Supervisor.BroadcastText(fmt.Sprintf("guessed that %s had %s, which was incorrect", player.Name, guessedCard.ToString()), u.Name)
 	}
 	time.Sleep(time.Millisecond * 100)
 	u.IsInTurn = false
@@ -219,16 +225,25 @@ func (u *User) PlayCard(cc card.Card) {
 }
 
 func (u *User) PrintCardActions(c card.Card) bool {
-
 	if c.Name() == "Guard" {
 		m := &Message{
 			Type:      Guard,
 			From:      "Game control",
-			Text:      "guard...",
-			GuardInfo: u.getGuardInfo(),
+			Text:      "guard",
+			Opponents: u.getOpponents(),
 		}
 		u.Write(m)
+		return c.ActionText() != ""
+	}
 
+	if c.Name() == "Priest" {
+		m := &Message{
+			Type:      Priest,
+			From:      "Game control",
+			Text:      "priest",
+			Opponents: u.getOpponents(),
+		}
+		u.Write(m)
 		return c.ActionText() != ""
 	}
 
@@ -243,15 +258,29 @@ func (u *User) PrintCardActions(c card.Card) bool {
 	return actionText != ""
 }
 
-func (u *User) getGuardInfo() GuardInfo {
+func (u *User) getOpponents() []UserInfo {
 	var opponents []UserInfo
 	for i, user := range u.Supervisor.Users {
 		if user.Order != u.Order && !user.IsProtected {
-			opponents = append(opponents, UserInfo{Name: user.Name, Number: i, Order: u.Order})
+			opponents = append(opponents, UserInfo{Name: user.Name, Number: i, Order: user.Order})
 		}
 	}
 
-	return GuardInfo{opponents}
+	return opponents
+}
+
+func (u *User) ViewOpponentCard(opponentInfo UserInfo) {
+	opponent := u.Supervisor.GetPlayerByOrder(opponentInfo.Order)
+	opponentCard := *opponent.Cards.Current
+	m := &Message{
+		Type: PriestResponse,
+		From: "Game control",
+		Text: fmt.Sprintf("%s has %s", opponent.Name, opponentCard.ToString()),
+		PriestPlayer: UserInfo{
+			Name: opponent.Name,
+		},
+	}
+	u.Write(m)
 }
 
 func createCardMessage(card card.Card) *Message {

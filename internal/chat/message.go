@@ -18,16 +18,16 @@ const (
 	PlayPickedCard
 	Guard
 	GuardGuess
+	Priest
+	PriestRequest
+	PriestResponse
+	PriestDiscard
 )
 
 type CardInfo struct {
 	Value       int    `json:"value"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
-}
-
-type GuardInfo struct {
-	Opponents []UserInfo
 }
 
 type UserInfo struct {
@@ -42,14 +42,15 @@ type Guess struct {
 }
 
 type Message struct {
-	Type        MessageType `json:"type"`
-	From        string      `json:"from"`
-	Text        string      `json:"text"`
-	Timestamp   string      `json:"timestamp"`
-	CurrentCard CardInfo    `json:"cardInfo"`
-	PickedCard  CardInfo    `json:"pickedCard"`
-	GuardInfo   GuardInfo   `json:"guardInfo"`
-	GuardGuess  Guess       `json:"guardGuess"`
+	Type         MessageType `json:"type"`
+	From         string      `json:"from"`
+	Text         string      `json:"text"`
+	Timestamp    string      `json:"timestamp"`
+	CurrentCard  CardInfo    `json:"cardInfo"`
+	PickedCard   CardInfo    `json:"pickedCard"`
+	Opponents    []UserInfo  `json:"opponents"`
+	GuardGuess   Guess       `json:"guardGuess"`
+	PriestPlayer UserInfo    `json:"priestPlayer"`
 }
 
 func NewMessage(msgType MessageType, from string, text string) *Message {

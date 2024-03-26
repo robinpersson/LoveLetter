@@ -3,7 +3,6 @@ package frontend
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
-	"github.com/robinpersson/LoveLetter/internal/card"
 	"github.com/robinpersson/LoveLetter/internal/chat"
 	"golang.org/x/net/websocket"
 )
@@ -20,6 +19,7 @@ const (
 	ActionsWidget  = "actions"
 	RulesWidget    = "rules"
 	GuardWidget    = "guard action"
+	PriestWidget   = "priest action"
 )
 
 type UI struct {
@@ -62,15 +62,15 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 		messages.Wrap = true
 	}
 
-	if action, err := g.SetView(ActionsWidget, 0, maxY-12, maxX-20, maxY-1); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		action.Title = ActionsWidget
-		action.Autoscroll = false
-		action.Wrap = true
-		action.Editable = false
-	}
+	//if action, err := g.SetView(ActionsWidget, 0, maxY-12, maxX-20, maxY-1); err != nil {
+	//	if err != gocui.ErrUnknownView {
+	//		return err
+	//	}
+	//	action.Title = ActionsWidget
+	//	action.Autoscroll = false
+	//	action.Wrap = true
+	//	action.Editable = false
+	//}
 
 	if input, err := g.SetView(InputWidget, 0, maxY-5, maxX-20, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
@@ -103,19 +103,6 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 	g.SetCurrentView(InputWidget)
 
 	return nil
-}
-
-func getRules() string {
-	return card.GetPrincessRule() +
-		card.GetCountessRule() +
-		card.GetkingRule() +
-		card.GetChancellorRule() +
-		card.GetPrinceRule() +
-		card.GetHandmaidRule() +
-		card.GetBaronRule() +
-		card.GetPriestRule() +
-		card.GetGuardRule() +
-		card.GetSpyRule()
 }
 
 func (ui *UI) SetKeyBindings(g *gocui.Gui) error {
@@ -154,183 +141,6 @@ func (ui *UI) SetKeyBindings(g *gocui.Gui) error {
 	return nil
 }
 
-func (ui *UI) ShowGuardActionView(g *gocui.Gui, message chat.Message) error {
-	//if err := g.SetKeybinding(GuardWidget, gocui.KeyF2, gocui.ModNone, ui.PlayPickedCard); err != nil {
-	//	return err
-	//}
-
-	maxX, maxY := g.Size()
-	g.Cursor = true
-
-	if guard, err := g.SetView(GuardWidget, 0, maxY-17, maxX-33, maxY-5); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		guard.Title = GuardWidget
-		guard.Autoscroll = false
-		guard.Wrap = true
-		//guard.Highlight = true
-		guard.Overwrite = true
-		guard.Title = "select player to guess on"
-		fmt.Fprint(guard, getOpponents(message.GuardInfo))
-
-	}
-
-	for _, u := range message.GuardInfo.Opponents {
-		key, pickFunc := ui.getKey(u.Order)
-		if err := g.SetKeybinding(InputWidget, key, gocui.ModNone, pickFunc); err != nil {
-			return err
-		}
-
-	}
-
-	return nil
-}
-
-func (ui *UI) getKey(userOrder int) (gocui.Key, func(g *gocui.Gui, v *gocui.View) error) {
-	switch userOrder {
-	case 1:
-		return gocui.KeyF1, ui.PickPlayer1
-	case 2:
-		return gocui.KeyF2, ui.PickPlayer2
-	case 3:
-		return gocui.KeyF3, ui.PickPlayer3
-	case 4:
-		return gocui.KeyF4, ui.PickPlayer3
-	case 5:
-		return gocui.KeyF5, ui.PickPlayer3
-	case 6:
-		return gocui.KeyF6, ui.PickPlayer3
-	default:
-		return 0, nil
-
-	}
-}
-
-func getGuessCards() string {
-	return "F1 Spy\nF2 Priest\nF3 Baron\nF4 Handmaid\nF5 Prince\nF6 Chancellor\nF7 King\nF8 Countess\nF9 Princess"
-}
-
-func (ui *UI) printGuessCards(g *gocui.Gui) {
-	view, _ := g.View(GuardWidget)
-	view.Clear()
-	view.Title = "select card"
-	fmt.Fprint(view, getGuessCards())
-}
-
-func (ui *UI) PickPlayer1(g *gocui.Gui, _ *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
-	ui.printGuessCards(g)
-	ui.GuessCard(1)
-	return nil
-}
-
-func (ui *UI) PickPlayer2(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone)
-	ui.printGuessCards(g)
-	ui.GuessCard(2)
-	return nil
-}
-
-func (ui *UI) PickPlayer3(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF3, gocui.ModNone)
-	ui.printGuessCards(g)
-	ui.GuessCard(3)
-	return nil
-}
-
-func (ui *UI) PickPlayer4(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF4, gocui.ModNone)
-	ui.printGuessCards(g)
-	ui.GuessCard(4)
-	return nil
-}
-
-func (ui *UI) PickPlayer5(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF5, gocui.ModNone)
-	ui.printGuessCards(g)
-	ui.GuessCard(5)
-	return nil
-}
-
-func (ui *UI) PickPlayer6(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF6, gocui.ModNone)
-	ui.printGuessCards(g)
-	ui.GuessCard(6)
-	return nil
-}
-
-func (ui *UI) GuessCard(playerNumber int) {
-	//SPY
-	ui.SetKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 0)
-		return nil
-	})
-	//PRIEST
-	ui.SetKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 2)
-		return nil
-	})
-	//BARON
-	ui.SetKeybinding(InputWidget, gocui.KeyF3, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 3)
-		return nil
-	})
-	//HANDMAID
-	ui.SetKeybinding(InputWidget, gocui.KeyF4, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 4)
-		return nil
-	})
-	//PRINCE
-	ui.SetKeybinding(InputWidget, gocui.KeyF5, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 5)
-		return nil
-	})
-	//CHANCELLOR
-	ui.SetKeybinding(InputWidget, gocui.KeyF6, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 6)
-		return nil
-	})
-	//KING
-	ui.SetKeybinding(InputWidget, gocui.KeyF7, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 7)
-		return nil
-	})
-	//COUNTESS
-	ui.SetKeybinding(InputWidget, gocui.KeyF8, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 8)
-		return nil
-	})
-	//PRONCESS
-	ui.SetKeybinding(InputWidget, gocui.KeyF9, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 9)
-		return nil
-	})
-
-	clearGuessCardBindings(ui.Gui)
-}
-
-func clearGuessCardBindings(g *gocui.Gui) {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
-	g.DeleteKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone)
-	g.DeleteKeybinding(InputWidget, gocui.KeyF3, gocui.ModNone)
-	g.DeleteKeybinding(InputWidget, gocui.KeyF4, gocui.ModNone)
-	g.DeleteKeybinding(InputWidget, gocui.KeyF5, gocui.ModNone)
-	g.DeleteKeybinding(InputWidget, gocui.KeyF6, gocui.ModNone)
-	g.DeleteKeybinding(InputWidget, gocui.KeyF7, gocui.ModNone)
-	g.DeleteKeybinding(InputWidget, gocui.KeyF8, gocui.ModNone)
-	g.DeleteKeybinding(InputWidget, gocui.KeyF9, gocui.ModNone)
-}
-
-func getOpponents(info chat.GuardInfo) string {
-	var opponents string
-	for _, o := range info.Opponents {
-		opponents += fmt.Sprintf("F%d. %s", o.Order, o.Name)
-	}
-
-	return opponents
-}
-
 func (ui *UI) SetUsername(username string) {
 	ui.username = username
 }
@@ -357,27 +167,6 @@ func (ui *UI) Connect(username string) error {
 	return nil
 }
 
-func (ui *UI) GuessPlayer(playerNumber, card int) error {
-
-	//message := chat.NewMessage(chat.GuardGuess, ui.username, fmt.Sprintf("guessed ")
-	message := chat.Message{
-		Type: chat.GuardGuess,
-		From: ui.username,
-		GuardGuess: chat.Guess{
-			PlayerOrder: playerNumber,
-			Card:        card,
-		},
-	}
-
-	if err := websocket.JSON.Send(ui.connection, message); err != nil {
-		return fmt.Errorf("UI.WriteMessage: %w", err)
-	}
-
-	ui.DeleteView(GuardWidget)
-
-	return nil
-}
-
 func (ui *UI) WriteMessage(_ *gocui.Gui, v *gocui.View) error {
 	message := chat.NewMessage(chat.Regular, ui.username, v.Buffer())
 
@@ -388,70 +177,6 @@ func (ui *UI) WriteMessage(_ *gocui.Gui, v *gocui.View) error {
 	v.SetCursor(0, 0)
 	v.Clear()
 
-	return nil
-}
-
-func (ui *UI) StartGame(_ *gocui.Gui, v *gocui.View) error {
-
-	message := chat.NewMessage(chat.StartGame, ui.username, "started the game\n")
-
-	if err := websocket.JSON.Send(ui.connection, message); err != nil {
-		return fmt.Errorf("UI.WriteMessage: %w", err)
-	}
-
-	v.SetCursor(0, 0)
-	v.Clear()
-
-	return nil
-}
-
-func (ui *UI) PlayCurrentCard(_ *gocui.Gui, v *gocui.View) error {
-
-	message := chat.NewMessage(chat.PlayCurrentCard, ui.username, "Play current card")
-
-	if err := websocket.JSON.Send(ui.connection, message); err != nil {
-		return fmt.Errorf("UI.WriteMessage: %w", err)
-	}
-
-	v.SetCursor(0, 0)
-	v.Clear()
-
-	return nil
-}
-
-func (ui *UI) PlayPickedCard(_ *gocui.Gui, v *gocui.View) error {
-
-	message := chat.NewMessage(chat.PlayPickedCard, ui.username, "Play picked card")
-
-	if err := websocket.JSON.Send(ui.connection, message); err != nil {
-		return fmt.Errorf("UI.WriteMessage: %w", err)
-	}
-
-	v.SetCursor(0, 0)
-	v.Clear()
-
-	return nil
-}
-
-func (ui *UI) RulesView() error {
-	maxX, maxY := ui.Size()
-	//name := fmt.Sprintf("v%v", 0)
-	//0, 0, maxX-25, maxY-30
-	v, err := ui.SetView("Rules", 0, 0+5, maxX, maxY)
-	if err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		v.Wrap = true
-
-		fmt.Fprintln(v, getRules())
-	}
-	if _, err := ui.SetCurrentView("Rules"); err != nil {
-		return err
-	}
-
-	//fmt.Fprint(v, me)
-	//views = append(views, name)
 	return nil
 }
 
@@ -469,7 +194,6 @@ func (ui *UI) ReadMessage() error {
 				if err != nil {
 					return fmt.Errorf("UI.ReadMessage: %w", err)
 				}
-
 				fmt.Fprint(view, message.Formatted())
 			case chat.CardMessage:
 				view, err := ui.View(CardsWidget)
@@ -477,28 +201,22 @@ func (ui *UI) ReadMessage() error {
 					return fmt.Errorf("UI.ReadMessage: %w", err)
 				}
 				view.Clear()
-
 				fmt.Fprint(view, message.Formatted())
 			case chat.ActionsMessage:
-				view, err := ui.View(ActionsWidget)
-				if err != nil {
-					return fmt.Errorf("UI.ReadMessage: %w", err)
-				}
-				view.Clear()
-
-				fmt.Fprint(view, message.Text)
+				ui.ShowPickCardsView()
 			case chat.Connected, chat.Disconnected:
 				view, err := ui.View(UsersWidget)
 				if err != nil {
 					return fmt.Errorf("UI.ReadMessage: %w", err)
 				}
-
 				view.Clear()
 				fmt.Fprint(view, message.Text)
 			case chat.Guard:
 				ui.ShowGuardActionView(g, message)
-				//view.Clear()
-				//fmt.Fprint(view, message.Text)
+			case chat.Priest:
+				ui.ShowPriestActionView(g, message)
+			case chat.PriestResponse:
+				ui.ShowPriestResponseActionView(g, message)
 			}
 
 			return nil

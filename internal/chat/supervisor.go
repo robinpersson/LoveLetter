@@ -133,7 +133,7 @@ func (s *Supervisor) BroadcastText(text, from string) error {
 	message := &Message{
 		Type:      Regular,
 		From:      from,
-		Text:      text,
+		Text:      text + "\n",
 		Timestamp: time.Now().Format(time.TimeOnly),
 	}
 
@@ -236,4 +236,23 @@ func (s *Supervisor) GetPlayerByOrder(order int) *User {
 func (s *Supervisor) EliminatePlayer(player *User) {
 	player.Eliminated = true
 	s.SendGameControlMessage(fmt.Sprintf("%s is eliminated", player.Name))
+	s.CheckIfGameIsOver()
+}
+
+func (s *Supervisor) CheckIfGameIsOver() {
+	var usersLeft []*User
+	for _, user := range s.Users {
+		if !user.Eliminated {
+			usersLeft = append(usersLeft, user)
+		}
+	}
+
+	if len(usersLeft) == 1 {
+
+		user := s.GetPlayerByOrder(usersLeft[0].Order)
+		// We have a winner
+		user.Tokens += user.Tokens
+
+		//Start new game
+	}
 }

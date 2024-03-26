@@ -27,6 +27,33 @@ type CardSettings struct {
 	name        string
 }
 
+func GetCardByValue(value int) Card {
+	switch value {
+	case 0:
+		return NewSpy()
+	case 1:
+		return NewGuard()
+	case 2:
+		return NewPriest()
+	case 3:
+		return NewBaron()
+	case 4:
+		return NewHandmaid()
+	case 5:
+		return NewPrince()
+	case 6:
+		return NewChancellor()
+	case 7:
+		return NewKing()
+	case 8:
+		return NewCountess()
+	case 9:
+		return NewPrincess()
+	default:
+		return nil
+	}
+}
+
 //func NewCard() Card {
 //	return &card{}
 //}

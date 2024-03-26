@@ -61,16 +61,16 @@ func (d *deck) fakeInit() {
 	for i := 0; i < guardCount; i++ {
 		cards = append(cards, NewGuard())
 	}
+	for i := 0; i < priestCount; i++ {
+		cards = append(cards, NewPriest())
+	}
+
 	for i := 0; i < handmaidCount; i++ {
 		cards = append(cards, NewHandmaid())
 	}
 
 	for i := 0; i < spyCount; i++ {
 		cards = append(cards, NewSpy())
-	}
-
-	for i := 0; i < priestCount; i++ {
-		cards = append(cards, NewPriest())
 	}
 
 	for i := 0; i < baronCount; i++ {
