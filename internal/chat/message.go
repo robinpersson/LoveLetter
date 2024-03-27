@@ -27,7 +27,8 @@ const (
 	Prince
 	DiscardCard
 	Chancellor
-	KeepCard
+	InsertChancellorCards
+	Deck
 )
 
 type CardInfo struct {

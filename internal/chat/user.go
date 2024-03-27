@@ -161,14 +161,15 @@ func (u *User) Read() {
 			u.CompareHands(message.OpponentPlayer.Order)
 		case DiscardCard:
 			u.DiscardCard(message.OpponentPlayer.Order)
-		case KeepCard:
-			u.KeepCard(message.CurrentCard)
+		case InsertChancellorCards:
+			u.InsertChancellorCards(message)
 		}
 
+		u.Supervisor.BroadcastDeckCount()
 	}
 }
 
-func (u *User) getCardToKeep(value int) *card.Card {
+func (u *User) getChancellorCardByValue(value int) *card.Card {
 	for _, chCard := range u.ChancellorCards {
 		if chCard.Value() == value {
 			return &chCard
@@ -178,9 +179,28 @@ func (u *User) getCardToKeep(value int) *card.Card {
 	return nil
 }
 
-func (u *User) KeepCard(cardToKeep CardInfo) {
-	u.Cards.Current = u.getCardToKeep(cardToKeep.Value)
-	u.ChancellorCards = append(u.ChancellorCards[:cardToKeep.Index], u.ChancellorCards[2:]...)
+func (u *User) InsertChancellorCards(message *Message) {
+	u.Cards.Current = u.getChancellorCardByValue(message.CurrentCard.Value)
+	u.ChancellorCardInfos = nil
+
+	var cardsToInsert []card.Card
+
+	fmt.Println(u.ChancellorCards)
+
+	for _, chCard := range message.ChancellorCards {
+		cc := u.getChancellorCardByValue(chCard.Value)
+		cardsToInsert = append(cardsToInsert, *cc)
+	}
+
+	u.ChancellorCards = nil
+
+	u.Supervisor.InsertCards(cardsToInsert)
+
+	u.Supervisor.BroadcastText(fmt.Sprintf("inserted %d cards in the bottom of the deck", len(cardsToInsert)), u.Name)
+	time.Sleep(time.Millisecond * 200)
+
+	u.IsInTurn = false
+	u.Supervisor.NextPlayer(u.Order)
 
 }
 

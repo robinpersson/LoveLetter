@@ -66,6 +66,10 @@ func (g *Game) Start() {
 	g.Started = true
 }
 
+func (g *Game) InsertCards(cardsToInsert []card.Card) {
+	g.Deck.InsertCards(cardsToInsert)
+}
+
 func (g *Game) DealCards() {
 	//for _, player := range g.Players {
 	//	//player.DealCard()

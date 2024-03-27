@@ -102,6 +102,10 @@ func (ui *UI) KeepCard(cardIndex int) error {
 	currentCardPrint := fmt.Sprintf("Current card: %s\nPicked card:", keepCard.Description)
 	fmt.Fprint(cardsView, currentCardPrint)
 
+	if len(currentCards) == 0 {
+		return ui.SendChancellorCards(false)
+	}
+
 	return ui.ShowChancellorActionOrderView()
 }
 
@@ -113,10 +117,8 @@ func (ui *UI) SendChancellorCards(firstBottom bool) error {
 		})
 	}
 
-	fmt.Println(currentCards)
-
 	message := chat.Message{
-		Type:            chat.KeepCard,
+		Type:            chat.InsertChancellorCards,
 		From:            ui.username,
 		CurrentCard:     keepCard,
 		ChancellorCards: currentCards,
@@ -126,7 +128,9 @@ func (ui *UI) SendChancellorCards(firstBottom bool) error {
 		return fmt.Errorf("UI.WriteMessage: %w", err)
 	}
 
-	return ui.DeleteView(ChancellorWidget)
+	ui.DeleteView(ChancellorWidget)
+	ui.clearGuessCardBindings()
+	return nil
 }
 
 func (ui *UI) Chancellor_FirstBottom(g *gocui.Gui, _ *gocui.View) error {

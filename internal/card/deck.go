@@ -14,7 +14,7 @@ type Deck interface {
 	Cards() []Card
 	OutCard() Card
 	PickCard() *Card
-	InsertCards(card1 Card, card2 Card)
+	InsertCards(cardsToInsert []Card)
 }
 
 type deck struct {
@@ -31,20 +31,25 @@ func (d *deck) OutCard() Card {
 }
 
 func (d *deck) PickCard() *Card {
+
+	if len(d.cards) == 0 {
+		return nil
+	}
+
 	card := d.cards[0]
 	d.cards = d.cards[1:]
 	return &card
 }
 
-func (d *deck) InsertCards(card1 Card, card2 Card) {
-	d.cards = append(d.cards, card1, card2)
+func (d *deck) InsertCards(cardsToInsert []Card) {
+	d.cards = append(d.cards, cardsToInsert...)
 }
 
 func NewDeck() Deck {
 	d := deck{}
-	d.fakeInit()
-	//d.init()
-	//d.Shuffle()
+	//d.fakeInit()
+	d.init()
+	d.Shuffle()
 	return &d
 }
 
@@ -59,9 +64,17 @@ func (d *deck) fakeInit() {
 	var cards []Card
 
 	cards = append(cards, NewChancellor())
-	for i := 0; i < princeCount; i++ {
-		cards = append(cards, NewPrince())
-	}
+	cards = append(cards, NewHandmaid())
+	cards = append(cards, NewKing())
+	cards = append(cards, NewCountess())
+	cards = append(cards, NewSpy())
+
+	//cards = append(cards, NewHandmaid())
+	//for i := 0; i < princeCount; i++ {
+	//	cards = append(cards, NewPrince())
+	//}
+	d.cards = cards
+	return
 
 	for i := 0; i < baronCount-1; i++ {
 		cards = append(cards, NewBaron())

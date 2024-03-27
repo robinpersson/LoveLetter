@@ -23,6 +23,7 @@ const (
 	BaronWidget      = "baron action"
 	PrinceWidget     = "prince action"
 	ChancellorWidget = "chancellor action"
+	DeckWidget       = "deck"
 )
 
 type UI struct {
@@ -53,7 +54,6 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 		controls.Autoscroll = true
 		controls.Wrap = true
 		fmt.Fprint(controls, "- start new game: Ctrl+S\n- toggle rules: Ctrl+R")
-
 	}
 
 	if messages, err := g.SetView(MessageWidget, 0, 5, maxX-15, maxY-5); err != nil {
@@ -90,6 +90,15 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 			return err
 		}
 		users.Title = UsersWidget
+		users.Autoscroll = false
+		users.Wrap = true
+	}
+
+	if users, err := g.SetView(DeckWidget, maxX-33, maxY-13, maxX-1, maxY-1); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		users.Title = DeckWidget
 		users.Autoscroll = false
 		users.Wrap = true
 	}
@@ -211,6 +220,13 @@ func (ui *UI) ReadMessage() error {
 				fmt.Fprint(view, message.Formatted())
 			case chat.ActionsMessage:
 				ui.ShowPickCardsView()
+			case chat.Deck:
+				view, err := ui.View(DeckWidget)
+				if err != nil {
+					return fmt.Errorf("UI.ReadMessage: %w", err)
+				}
+				view.Clear()
+				fmt.Fprint(view, message.Text)
 			case chat.Connected, chat.Disconnected:
 				view, err := ui.View(UsersWidget)
 				if err != nil {

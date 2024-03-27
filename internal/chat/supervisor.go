@@ -28,6 +28,10 @@ func (s *Supervisor) PickCard() *card.Card {
 	return s.Game.PickCard()
 }
 
+func (s *Supervisor) InsertCards(cardsToInsert []card.Card) {
+	s.Game.InsertCards(cardsToInsert)
+}
+
 func (s *Supervisor) Join(user *User) {
 	s.mu.Lock()
 
@@ -44,6 +48,12 @@ func (s *Supervisor) Join(user *User) {
 func (s *Supervisor) SendGameControlMessage(text string) {
 	mess := NewMessage(Regular, "Game control", text)
 	mess.SetTime(time.Now())
+	s.Broadcast(mess)
+}
+
+func (s *Supervisor) BroadcastDeckCount() {
+	mess := NewMessage(Deck, "Game control", fmt.Sprintf("%d cards left", len(s.Game.Deck.Cards())))
+	//mess.SetTime(time.Now())
 	s.Broadcast(mess)
 }
 
@@ -272,17 +282,17 @@ func (s *Supervisor) getChancellorCards(current card.Card) []card.Card {
 
 	chCards = append(chCards, current)
 
-	card2 := *s.Game.PickCard()
+	card2 := s.Game.PickCard()
 	if card2 == nil {
 		return chCards
 	}
-	chCards = append(chCards, card2)
+	chCards = append(chCards, *card2)
 
-	card3 := *s.Game.PickCard()
+	card3 := s.Game.PickCard()
 	if card3 == nil {
 		return chCards
 	}
-	chCards = append(chCards, card3)
+	chCards = append(chCards, *card3)
 
 	return chCards
 }
@@ -302,40 +312,40 @@ func (s *Supervisor) MapCards(cards []card.Card) []CardInfo {
 	return cardInfos
 }
 
-func (s *Supervisor) getChancellorCards2(current card.Card) []CardInfo {
-	var cardInfos []CardInfo
-
-	cardInfos = append(cardInfos, CardInfo{
-		Value:       current.Value(),
-		Name:        current.Name(),
-		Description: current.ToString(),
-		Index:       0,
-	})
-
-	card2 := *s.Game.PickCard()
-
-	if card2 == nil {
-		return cardInfos
-	}
-
-	cardInfos = append(cardInfos, CardInfo{
-		Value:       card2.Value(),
-		Name:        card2.Name(),
-		Description: card2.ToString(),
-		Index:       1,
-	})
-
-	card3 := *s.Game.PickCard()
-	if card3 == nil {
-		return cardInfos
-	}
-
-	cardInfos = append(cardInfos, CardInfo{
-		Value:       card3.Value(),
-		Name:        card3.Name(),
-		Description: card3.ToString(),
-		Index:       2,
-	})
-
-	return cardInfos
-}
+//func (s *Supervisor) getChancellorCards2(current card.Card) []CardInfo {
+//	var cardInfos []CardInfo
+//
+//	cardInfos = append(cardInfos, CardInfo{
+//		Value:       current.Value(),
+//		Name:        current.Name(),
+//		Description: current.ToString(),
+//		Index:       0,
+//	})
+//
+//	card2 := *s.Game.PickCard()
+//
+//	if card2 == nil {
+//		return cardInfos
+//	}
+//
+//	cardInfos = append(cardInfos, CardInfo{
+//		Value:       card2.Value(),
+//		Name:        card2.Name(),
+//		Description: card2.ToString(),
+//		Index:       1,
+//	})
+//
+//	card3 := *s.Game.PickCard()
+//	if card3 == nil {
+//		return cardInfos
+//	}
+//
+//	cardInfos = append(cardInfos, CardInfo{
+//		Value:       card3.Value(),
+//		Name:        card3.Name(),
+//		Description: card3.ToString(),
+//		Index:       2,
+//	})
+//
+//	return cardInfos
+//}
