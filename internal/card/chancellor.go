@@ -17,7 +17,7 @@ type chancellor struct {
 }
 
 func (c chancellor) ToString() string {
-	return fmt.Sprintf("[%d] %s", c.value, c.name)
+	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }
 
 func (c chancellor) ShortString() string {

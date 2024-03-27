@@ -17,7 +17,7 @@ type countess struct {
 }
 
 func (c countess) ToString() string {
-	return fmt.Sprintf("[%d] %s", c.value, c.name)
+	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }
 
 func (c countess) ShortString() string {

@@ -17,7 +17,7 @@ type princess struct {
 }
 
 func (c princess) ToString() string {
-	return fmt.Sprintf("[%d] %s", c.value, c.name)
+	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }
 
 func (c princess) ShortString() string {

@@ -11,15 +11,18 @@ const (
 	WebsocketEndpoint = "ws://:3000/"
 	WebsocketOrigin   = "http://"
 
-	MessageWidget  = "messages"
-	UsersWidget    = "players"
-	InputWidget    = "send"
-	CardsWidget    = "your cards"
-	ControlsWidget = "game control"
-	ActionsWidget  = "actions"
-	RulesWidget    = "rules"
-	GuardWidget    = "guard action"
-	PriestWidget   = "priest action"
+	MessageWidget    = "messages"
+	UsersWidget      = "players"
+	InputWidget      = "send"
+	CardsWidget      = "your cards"
+	ControlsWidget   = "game control"
+	ActionsWidget    = "actions"
+	RulesWidget      = "rules"
+	GuardWidget      = "guard action"
+	PriestWidget     = "priest action"
+	BaronWidget      = "baron action"
+	PrinceWidget     = "prince action"
+	ChancellorWidget = "chancellor action"
 )
 
 type UI struct {
@@ -118,13 +121,13 @@ func (ui *UI) SetKeyBindings(g *gocui.Gui) error {
 		return err
 	}
 
-	if err := g.SetKeybinding(InputWidget, gocui.KeyCtrlH, gocui.ModNone, ui.PlayCurrentCard); err != nil {
-		return err
-	}
-
-	if err := g.SetKeybinding(InputWidget, gocui.KeyCtrlP, gocui.ModNone, ui.PlayPickedCard); err != nil {
-		return err
-	}
+	//if err := g.SetKeybinding(InputWidget, gocui.KeyCtrlH, gocui.ModNone, ui.PlayCurrentCard); err != nil {
+	//	return err
+	//}
+	//
+	//if err := g.SetKeybinding(InputWidget, gocui.KeyCtrlP, gocui.ModNone, ui.PlayPickedCard); err != nil {
+	//	return err
+	//}
 
 	if err := g.SetKeybinding("", gocui.KeyCtrlR, gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
@@ -188,6 +191,10 @@ func (ui *UI) ReadMessage() error {
 		}
 
 		ui.Update(func(g *gocui.Gui) error {
+			//ui.DeleteView(PriestWidget)
+			//ui.DeleteView(BaronWidget)
+			//ui.DeleteView(PrinceWidget)
+			//ui.DeleteView(GuardWidget)
 			switch message.Type {
 			case chat.Regular, chat.StartGame:
 				view, err := ui.View(MessageWidget)
@@ -217,6 +224,13 @@ func (ui *UI) ReadMessage() error {
 				ui.ShowPriestActionView(g, message)
 			case chat.PriestResponse:
 				ui.ShowPriestResponseActionView(g, message)
+			case chat.Baron:
+				// if no opponents what to do?
+				ui.ShowBaronActionView(g, message)
+			case chat.Prince:
+				ui.ShowPrinceActionView(g, message)
+			case chat.Chancellor:
+				ui.ShowChancellorActionView(g, message)
 			}
 
 			return nil

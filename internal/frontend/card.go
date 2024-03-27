@@ -38,33 +38,31 @@ func (ui *UI) ShowPickCardsView() error {
 }
 
 func (ui *UI) PlayPickedCard(g *gocui.Gui, v *gocui.View) error {
-
 	message := chat.NewMessage(chat.PlayPickedCard, ui.username, "Play picked card")
 
 	if err := websocket.JSON.Send(ui.connection, message); err != nil {
 		return fmt.Errorf("UI.WriteMessage: %w", err)
 	}
 
-	v.SetCursor(0, 0)
 	v.Clear()
-
-	deletePickCardBindings(g)
+	ui.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
+	ui.DeleteKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone)
+	ui.DeleteView(ActionsWidget)
 
 	return nil
 }
 
 func (ui *UI) PlayCurrentCard(g *gocui.Gui, v *gocui.View) error {
-
 	message := chat.NewMessage(chat.PlayCurrentCard, ui.username, "Play current card")
 
 	if err := websocket.JSON.Send(ui.connection, message); err != nil {
 		return fmt.Errorf("UI.WriteMessage: %w", err)
 	}
 
-	v.SetCursor(0, 0)
 	v.Clear()
-
-	deletePickCardBindings(g)
+	ui.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
+	ui.DeleteKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone)
+	ui.DeleteView(ActionsWidget)
 
 	return nil
 }

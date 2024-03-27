@@ -37,7 +37,7 @@ func (ui *UI) ShowGuardActionView(_ *gocui.Gui, message chat.Message) error {
 }
 
 func (ui *UI) GuessPlayer(playerNumber, card int) error {
-	ui.clearGuessCardBindings()
+
 	message := chat.Message{
 		Type: chat.GuardGuess,
 		From: ui.username,
@@ -52,6 +52,7 @@ func (ui *UI) GuessPlayer(playerNumber, card int) error {
 	}
 
 	ui.DeleteView(GuardWidget)
+	ui.clearGuessCardBindings()
 
 	return nil
 }
@@ -71,33 +72,27 @@ func (ui *UI) clearGuessCardBindings() {
 func (ui *UI) GuessCard(playerNumber int) {
 	//SPY
 	ui.SetKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 0)
-		return nil
+		return ui.GuessPlayer(playerNumber, 0)
 	})
 	//PRIEST
 	ui.SetKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 2)
-		return nil
+		return ui.GuessPlayer(playerNumber, 2)
 	})
 	//BARON
 	ui.SetKeybinding(InputWidget, gocui.KeyF3, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 3)
-		return nil
+		return ui.GuessPlayer(playerNumber, 3)
 	})
 	//HANDMAID
 	ui.SetKeybinding(InputWidget, gocui.KeyF4, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 4)
-		return nil
+		return ui.GuessPlayer(playerNumber, 4)
 	})
 	//PRINCE
 	ui.SetKeybinding(InputWidget, gocui.KeyF5, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 5)
-		return nil
+		return ui.GuessPlayer(playerNumber, 5)
 	})
 	//CHANCELLOR
 	ui.SetKeybinding(InputWidget, gocui.KeyF6, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
-		ui.GuessPlayer(playerNumber, 6)
-		return nil
+		return ui.GuessPlayer(playerNumber, 6)
 	})
 	//KING
 	ui.SetKeybinding(InputWidget, gocui.KeyF7, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
@@ -109,50 +104,46 @@ func (ui *UI) GuessCard(playerNumber int) {
 		ui.GuessPlayer(playerNumber, 8)
 		return nil
 	})
-	//PRONCESS
+	//PRINCESS
 	ui.SetKeybinding(InputWidget, gocui.KeyF9, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
 		ui.GuessPlayer(playerNumber, 9)
 		return nil
 	})
+
+	ui.clearGuessCardBindings()
 }
 
 func (ui *UI) Guard_PickPlayer1(g *gocui.Gui, _ *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
 	ui.printGuessCards(g)
 	ui.GuessCard(1)
 	return nil
 }
 
 func (ui *UI) Guard_PickPlayer2(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone)
 	ui.printGuessCards(g)
 	ui.GuessCard(2)
 	return nil
 }
 
 func (ui *UI) Guard_PickPlayer3(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF3, gocui.ModNone)
 	ui.printGuessCards(g)
 	ui.GuessCard(3)
 	return nil
 }
 
 func (ui *UI) Guard_PickPlayer4(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF4, gocui.ModNone)
 	ui.printGuessCards(g)
 	ui.GuessCard(4)
 	return nil
 }
 
 func (ui *UI) Guard_PickPlayer5(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF5, gocui.ModNone)
 	ui.printGuessCards(g)
 	ui.GuessCard(5)
 	return nil
 }
 
 func (ui *UI) Guard_PickPlayer6(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF6, gocui.ModNone)
 	ui.printGuessCards(g)
 	ui.GuessCard(6)
 	return nil

@@ -54,23 +54,18 @@ func (ui *UI) ShowPriestResponseActionView(_ *gocui.Gui, message chat.Message) e
 	}
 
 	err := ui.SetKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-		ui.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
-		ui.sendPriestDiscardMessage(message.PriestPlayer.Name)
+		ui.sendPriestDiscardMessage(message.OpponentPlayer.Name)
 		return ui.DeleteView(PriestWidget)
 	})
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (ui *UI) ViewCard(playerNumber int) error {
 	message := chat.Message{
-		Type:         chat.PriestRequest,
-		From:         ui.username,
-		PriestPlayer: chat.UserInfo{Order: playerNumber},
+		Type:           chat.PriestRequest,
+		From:           ui.username,
+		OpponentPlayer: chat.UserInfo{Order: playerNumber},
 	}
 
 	if err := websocket.JSON.Send(ui.connection, message); err != nil {
@@ -94,50 +89,39 @@ func (ui *UI) sendPriestDiscardMessage(name string) error {
 	message = chat.Message{
 		Type: chat.PriestDiscard,
 		From: ui.username,
-		//Text: fmt.Sprintf("looked at %s card", name),
 	}
 
 	if err := websocket.JSON.Send(ui.connection, message); err != nil {
 		return fmt.Errorf("UI.WriteMessage: %w", err)
 	}
 
-	return nil
+	err := ui.DeleteView(PriestWidget)
+	ui.clearGuessCardBindings()
+	return err
 }
 
 func (ui *UI) Priest_PickPlayer1(g *gocui.Gui, _ *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
-	ui.ViewCard(1)
-	return nil
+	return ui.ViewCard(1)
 }
 
 func (ui *UI) Priest_PickPlayer2(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone)
-	ui.ViewCard(2)
-	return nil
+	return ui.ViewCard(2)
 }
 
 func (ui *UI) Priest_PickPlayer3(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF3, gocui.ModNone)
-	ui.ViewCard(3)
-	return nil
+	return ui.ViewCard(3)
 }
 
 func (ui *UI) Priest_PickPlayer4(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF4, gocui.ModNone)
-	ui.ViewCard(4)
-	return nil
+	return ui.ViewCard(4)
 }
 
 func (ui *UI) Priest_PickPlayer5(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF5, gocui.ModNone)
-	ui.ViewCard(5)
-	return nil
+	return ui.ViewCard(5)
 }
 
 func (ui *UI) Priest_PickPlayer6(g *gocui.Gui, v *gocui.View) error {
-	g.DeleteKeybinding(InputWidget, gocui.KeyF6, gocui.ModNone)
-	ui.ViewCard(6)
-	return nil
+	return ui.ViewCard(6)
 }
 
 func (ui *UI) priest_getKey(userOrder int) (gocui.Key, func(g *gocui.Gui, v *gocui.View) error) {

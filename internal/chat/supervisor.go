@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/robinpersson/LoveLetter/internal/card"
 	"github.com/robinpersson/LoveLetter/internal/game"
-	"math/rand/v2"
 	"sort"
 	"sync"
 	"time"
@@ -90,10 +89,10 @@ func (s *Supervisor) CurrentSortedUsers() string {
 
 	var users string
 	for _, u := range s.Users {
-		if u.IsProtected {
+		if u.Eliminated {
+			users += fmt.Sprintf("%d. \u001B[31;1m%s\u001B[0m\n", u.Order, u.Name)
+		} else if u.IsProtected {
 			users += fmt.Sprintf("%d. \u001B[33;1m%s\u001B[0m\n", u.Order, u.Name)
-		} else if u.Eliminated {
-			users += fmt.Sprintf("\u001B[31;1m%s\u001B[0m\n", u.Name)
 		} else {
 			users += fmt.Sprintf("%d. \u001B[32;1m%s\u001B[0m\n", u.Order, u.Name)
 		}
@@ -113,7 +112,7 @@ func addUserCards(user *User) string {
 		cardStr += fmt.Sprintf("%s ", c.ShortString())
 	}
 
-	return cardStr + "\n-----------------------\n"
+	return cardStr + "\n------------------------------\n"
 }
 
 func (s *Supervisor) Broadcast(message *Message) error {
@@ -167,12 +166,12 @@ func (s *Supervisor) SendToUser(message *Message, user User) error {
 
 func (s *Supervisor) StartGame(userStarted *User) error {
 
-	s.Game.StartNewGame()
+	s.Game.StartNewGame(len(s.Users))
 
 	s.Broadcast(NewMessage(Regular, userStarted.Name, "started the game"))
 	time.Sleep(time.Millisecond * 100)
 
-	rand.Shuffle(len(s.Users), func(i, j int) { s.Users[i], s.Users[j] = s.Users[j], s.Users[i] })
+	//rand.Shuffle(len(s.Users), func(i, j int) { s.Users[i], s.Users[j] = s.Users[j], s.Users[i] })
 
 	s.SendGameControlMessage("Randomizing play order")
 	time.Sleep(time.Millisecond * 100)
@@ -235,9 +234,20 @@ func (s *Supervisor) GetPlayerByOrder(order int) *User {
 
 func (s *Supervisor) EliminatePlayer(player *User) {
 	player.Eliminated = true
+	s.SendPlayOrder()
 	s.SendGameControlMessage(fmt.Sprintf("%s is eliminated", player.Name))
 	s.CheckIfGameIsOver()
 }
+
+//
+//func (s *Supervisor) SetPlayerAsEliminated(player *User) {
+//	for i, u := range s.Users {
+//		if u.Order == player.Order {
+//			s.Users[i].Eliminated = true
+//			return
+//		}
+//	}
+//}
 
 func (s *Supervisor) CheckIfGameIsOver() {
 	var usersLeft []*User
@@ -255,4 +265,77 @@ func (s *Supervisor) CheckIfGameIsOver() {
 
 		//Start new game
 	}
+}
+
+func (s *Supervisor) getChancellorCards(current card.Card) []card.Card {
+	var chCards []card.Card
+
+	chCards = append(chCards, current)
+
+	card2 := *s.Game.PickCard()
+	if card2 == nil {
+		return chCards
+	}
+	chCards = append(chCards, card2)
+
+	card3 := *s.Game.PickCard()
+	if card3 == nil {
+		return chCards
+	}
+	chCards = append(chCards, card3)
+
+	return chCards
+}
+
+func (s *Supervisor) MapCards(cards []card.Card) []CardInfo {
+	var cardInfos []CardInfo
+
+	for i, chCard := range cards {
+		cardInfos = append(cardInfos, CardInfo{
+			Value:       chCard.Value(),
+			Name:        chCard.Name(),
+			Description: chCard.ToString(),
+			Index:       i,
+		})
+	}
+
+	return cardInfos
+}
+
+func (s *Supervisor) getChancellorCards2(current card.Card) []CardInfo {
+	var cardInfos []CardInfo
+
+	cardInfos = append(cardInfos, CardInfo{
+		Value:       current.Value(),
+		Name:        current.Name(),
+		Description: current.ToString(),
+		Index:       0,
+	})
+
+	card2 := *s.Game.PickCard()
+
+	if card2 == nil {
+		return cardInfos
+	}
+
+	cardInfos = append(cardInfos, CardInfo{
+		Value:       card2.Value(),
+		Name:        card2.Name(),
+		Description: card2.ToString(),
+		Index:       1,
+	})
+
+	card3 := *s.Game.PickCard()
+	if card3 == nil {
+		return cardInfos
+	}
+
+	cardInfos = append(cardInfos, CardInfo{
+		Value:       card3.Value(),
+		Name:        card3.Name(),
+		Description: card3.ToString(),
+		Index:       2,
+	})
+
+	return cardInfos
 }

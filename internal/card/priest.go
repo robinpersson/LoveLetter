@@ -17,7 +17,7 @@ type priest struct {
 }
 
 func (c priest) ToString() string {
-	return fmt.Sprintf("[%d] %s", c.value, c.name)
+	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }
 
 func (c priest) ShortString() string {

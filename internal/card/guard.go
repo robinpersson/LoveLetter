@@ -19,7 +19,7 @@ type guard struct {
 }
 
 func (c guard) ToString() string {
-	return fmt.Sprintf("[%d] %s", c.value, c.name)
+	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }
 
 func (c guard) ShortString() string {

@@ -58,6 +58,21 @@ func (d *deck) Shuffle() {
 func (d *deck) fakeInit() {
 	var cards []Card
 
+	cards = append(cards, NewChancellor())
+	for i := 0; i < princeCount; i++ {
+		cards = append(cards, NewPrince())
+	}
+
+	for i := 0; i < baronCount-1; i++ {
+		cards = append(cards, NewBaron())
+	}
+
+	cards = append(cards, NewSpy())
+
+	for i := 0; i < handmaidCount; i++ {
+		cards = append(cards, NewHandmaid())
+	}
+
 	for i := 0; i < guardCount; i++ {
 		cards = append(cards, NewGuard())
 	}
@@ -65,20 +80,8 @@ func (d *deck) fakeInit() {
 		cards = append(cards, NewPriest())
 	}
 
-	for i := 0; i < handmaidCount; i++ {
-		cards = append(cards, NewHandmaid())
-	}
-
 	for i := 0; i < spyCount; i++ {
 		cards = append(cards, NewSpy())
-	}
-
-	for i := 0; i < baronCount; i++ {
-		cards = append(cards, NewBaron())
-	}
-
-	for i := 0; i < princeCount; i++ {
-		cards = append(cards, NewPrince())
 	}
 
 	for i := 0; i < chancellorCount; i++ {

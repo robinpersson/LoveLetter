@@ -17,7 +17,7 @@ type king struct {
 }
 
 func (c king) ToString() string {
-	return fmt.Sprintf("[%d] %s", c.value, c.name)
+	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }
 
 func (c king) ShortString() string {

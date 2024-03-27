@@ -9,16 +9,18 @@ import (
 )
 
 type User struct {
-	Name        string `json:"name"`
-	Order       int
-	Connection  *websocket.Conn `json:"-"`
-	Egress      chan *Message   `json:"-"`
-	Supervisor  *Supervisor     `json:"-"`
-	Cards       *Cards          `json:"-"`
-	IsInTurn    bool            `json:"-"`
-	Tokens      int             `json:"-"`
-	IsProtected bool            `json:"-"`
-	Eliminated  bool            `json:"-"`
+	Name                string `json:"name"`
+	Order               int
+	Connection          *websocket.Conn `json:"-"`
+	Egress              chan *Message   `json:"-"`
+	Supervisor          *Supervisor     `json:"-"`
+	Cards               *Cards          `json:"-"`
+	IsInTurn            bool            `json:"-"`
+	Tokens              int             `json:"-"`
+	IsProtected         bool            `json:"-"`
+	Eliminated          bool            `json:"-"`
+	ChancellorCardInfos []CardInfo      `json:"-"`
+	ChancellorCards     []card.Card     `json:"-"`
 }
 
 type Cards struct {
@@ -32,7 +34,16 @@ func (u *User) PickCard() *card.Card {
 	u.IsInTurn = true
 	u.Cards.Picked = c
 	u.SendPickedCard()
+	return u.Cards.Picked
+}
 
+func (u *User) DiscardCardAndPick() *card.Card {
+	c := u.Supervisor.PickCard()
+	u.Cards.Played = append(u.Cards.Played, *u.Cards.Current)
+	u.Cards.Current = c
+	u.SendCurrentCard()
+	time.Sleep(time.Millisecond * 200)
+	u.Supervisor.SendPlayOrder()
 	return u.Cards.Picked
 }
 
@@ -128,10 +139,7 @@ func (u *User) Read() {
 		switch message.Type {
 		case StartGame:
 			if !u.Supervisor.Game.Started {
-				//u.Supervisor.Broadcast(message)
-				//time.Sleep(time.Second * 3)
 				u.Supervisor.StartGame(u)
-				//u.Write(message)
 			} else {
 				u.Write(NewMessage(Regular, "Game control", "Game already started\n"))
 			}
@@ -144,14 +152,73 @@ func (u *User) Read() {
 		case GuardGuess:
 			u.GuessCard(message.GuardGuess.PlayerOrder, message.GuardGuess.Card)
 		case PriestRequest:
-			u.ViewOpponentCard(message.PriestPlayer)
+			u.ViewOpponentCard(message.OpponentPlayer)
 		case PriestDiscard:
-			//u.Supervisor.Broadcast(message)
+			u.IsInTurn = false
 			time.Sleep(time.Millisecond * 500)
 			u.Supervisor.NextPlayer(u.Order)
+		case CompareHands:
+			u.CompareHands(message.OpponentPlayer.Order)
+		case DiscardCard:
+			u.DiscardCard(message.OpponentPlayer.Order)
+		case KeepCard:
+			u.KeepCard(message.CurrentCard)
 		}
 
 	}
+}
+
+func (u *User) getCardToKeep(value int) *card.Card {
+	for _, chCard := range u.ChancellorCards {
+		if chCard.Value() == value {
+			return &chCard
+		}
+	}
+
+	return nil
+}
+
+func (u *User) KeepCard(cardToKeep CardInfo) {
+	u.Cards.Current = u.getCardToKeep(cardToKeep.Value)
+	u.ChancellorCards = append(u.ChancellorCards[:cardToKeep.Index], u.ChancellorCards[2:]...)
+
+}
+
+func (u *User) DiscardCard(opponentOrder int) {
+	opponent := u.Supervisor.GetPlayerByOrder(opponentOrder)
+	opponentCard := *opponent.Cards.Current
+
+	u.Supervisor.BroadcastText(fmt.Sprintf("made %s discard his %s", opponent.Name, opponentCard.ToString()), u.Name)
+	time.Sleep(time.Millisecond * 200)
+	opponent.DiscardCardAndPick()
+
+	u.IsInTurn = false
+	u.Supervisor.NextPlayer(u.Order)
+}
+
+func (u *User) CompareHands(opponentOrder int) {
+	opponent := u.Supervisor.GetPlayerByOrder(opponentOrder)
+	opponentCard := *opponent.Cards.Current
+	userCard := *u.Cards.Current
+
+	if opponentCard.Value() > userCard.Value() {
+		//Opponent win
+		u.Supervisor.BroadcastText(fmt.Sprintf("compared card with %s, %s won", opponent.Name, opponent.Name), u.Name)
+		time.Sleep(time.Millisecond * 200)
+		u.Supervisor.EliminatePlayer(u)
+	} else if opponentCard.Value() < userCard.Value() {
+		//Player win
+		u.Supervisor.BroadcastText(fmt.Sprintf("compared card with %s, %s won", opponent.Name, u.Name), u.Name)
+		time.Sleep(time.Millisecond * 200)
+		u.Supervisor.EliminatePlayer(opponent)
+	} else {
+		//It's a tie
+		u.Supervisor.BroadcastText(fmt.Sprintf("compared card with %s, it was a tie", opponent.Name), u.Name)
+		time.Sleep(time.Millisecond * 200)
+	}
+
+	u.IsInTurn = false
+	u.Supervisor.NextPlayer(u.Order)
 }
 
 func (u *User) GuessCard(playerOrder, cardNumber int) {
@@ -169,7 +236,7 @@ func (u *User) GuessCard(playerOrder, cardNumber int) {
 	} else {
 		u.Supervisor.BroadcastText(fmt.Sprintf("guessed that %s had %s, which was incorrect", player.Name, guessedCard.ToString()), u.Name)
 	}
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 500)
 	u.IsInTurn = false
 	u.Supervisor.NextPlayer(u.Order)
 
@@ -194,7 +261,7 @@ func (u *User) broadcastPickedCard(cc card.Card) {
 }
 
 func (u *User) PlayPickedCard() {
-	cc := *u.Cards.Picked
+	cc := *u.Cards.Picked //TODO: NULL
 	u.Cards.Picked = nil
 	u.PlayCard(cc)
 }
@@ -226,34 +293,93 @@ func (u *User) PlayCard(cc card.Card) {
 
 func (u *User) PrintCardActions(c card.Card) bool {
 	if c.Name() == "Guard" {
+		opponents := u.getOpponents()
+		if len(opponents) == 0 {
+			return false
+		}
+
 		m := &Message{
 			Type:      Guard,
 			From:      "Game control",
 			Text:      "guard",
-			Opponents: u.getOpponents(),
+			Opponents: opponents,
 		}
 		u.Write(m)
 		return c.ActionText() != ""
 	}
 
 	if c.Name() == "Priest" {
+		opponents := u.getOpponents()
+		if len(opponents) == 0 {
+			return false
+		}
+
 		m := &Message{
 			Type:      Priest,
 			From:      "Game control",
 			Text:      "priest",
-			Opponents: u.getOpponents(),
+			Opponents: opponents,
 		}
 		u.Write(m)
 		return c.ActionText() != ""
 	}
 
-	actionText := c.ActionText()
-	m := &Message{
-		Type: ActionsMessage,
-		From: "Game control",
-		Text: actionText,
+	if c.Name() == "Baron" {
+		opponents := u.getOpponents()
+		if len(opponents) == 0 {
+			return false
+		}
+
+		m := &Message{
+			Type:      Baron,
+			From:      "Game control",
+			Text:      "baron",
+			Opponents: opponents,
+		}
+		u.Write(m)
+		return c.ActionText() != ""
 	}
-	u.Write(m)
+
+	if c.Name() == "Prince" {
+		m := &Message{
+			Type:      Prince,
+			From:      "Game control",
+			Text:      "prince",
+			Opponents: u.getOpponentsIncludedCurrent(),
+		}
+		u.Write(m)
+		return c.ActionText() != ""
+	}
+
+	if c.Name() == "Chancellor" {
+		u.ChancellorCards = u.Supervisor.getChancellorCards(*u.Cards.Current)
+		u.ChancellorCardInfos = u.Supervisor.MapCards(u.ChancellorCards)
+
+		m := &Message{
+			Type:            Chancellor,
+			From:            "Game control",
+			Text:            "chancellor",
+			ChancellorCards: u.ChancellorCardInfos,
+		}
+		u.Write(m)
+
+		if len(u.ChancellorCards) != 1 {
+			time.Sleep(time.Millisecond * 100)
+			u.Supervisor.BroadcastText(fmt.Sprintf("picked %d cards", len(u.ChancellorCards)-1), u.Name)
+		}
+
+		return c.ActionText() != ""
+	}
+
+	actionText := c.ActionText()
+	if actionText != "" {
+		m := &Message{
+			Type: ActionsMessage,
+			From: "Game control",
+			Text: actionText,
+		}
+		u.Write(m)
+	}
 
 	return actionText != ""
 }
@@ -269,6 +395,17 @@ func (u *User) getOpponents() []UserInfo {
 	return opponents
 }
 
+func (u *User) getOpponentsIncludedCurrent() []UserInfo {
+	var opponents []UserInfo
+	for i, user := range u.Supervisor.Users {
+		if !user.IsProtected {
+			opponents = append(opponents, UserInfo{Name: user.Name, Number: i, Order: user.Order})
+		}
+	}
+
+	return opponents
+}
+
 func (u *User) ViewOpponentCard(opponentInfo UserInfo) {
 	opponent := u.Supervisor.GetPlayerByOrder(opponentInfo.Order)
 	opponentCard := *opponent.Cards.Current
@@ -276,7 +413,7 @@ func (u *User) ViewOpponentCard(opponentInfo UserInfo) {
 		Type: PriestResponse,
 		From: "Game control",
 		Text: fmt.Sprintf("%s has %s", opponent.Name, opponentCard.ToString()),
-		PriestPlayer: UserInfo{
+		OpponentPlayer: UserInfo{
 			Name: opponent.Name,
 		},
 	}
