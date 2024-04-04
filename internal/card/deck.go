@@ -47,9 +47,9 @@ func (d *deck) InsertCards(cardsToInsert []Card) {
 
 func NewDeck() Deck {
 	d := deck{}
-	//d.fakeInit()
-	d.init()
-	d.Shuffle()
+	d.fakeInit()
+	//d.init()
+	//d.Shuffle()
 	return &d
 }
 
@@ -63,11 +63,18 @@ func (d *deck) Shuffle() {
 func (d *deck) fakeInit() {
 	var cards []Card
 
-	cards = append(cards, NewChancellor())
-	cards = append(cards, NewHandmaid())
-	cards = append(cards, NewKing())
 	cards = append(cards, NewCountess())
-	cards = append(cards, NewSpy())
+	cards = append(cards, NewKing())
+	//cards = append(cards, NewPrincess())
+	//cards = append(cards, NewCountess())
+	//cards = append(cards, NewCountess())
+	cards = append(cards, NewCountess())
+	d.outCard = NewPrince()
+	//cards = append(cards, NewHandmaid())
+	//cards = append(cards, NewKing())
+	//cards = append(cards, NewChancellor())
+	//cards = append(cards, NewPrincess())
+	//cards = append(cards, NewSpy())
 
 	//cards = append(cards, NewHandmaid())
 	//for i := 0; i < princeCount; i++ {

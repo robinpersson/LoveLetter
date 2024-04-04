@@ -11,30 +11,49 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-func (ui *UI) ShowPickCardsView() error {
+func (ui *UI) ShowPickCardsView(message chat.Message) error {
 	maxX, maxY := ui.Size()
-	ui.Cursor = true
+	height := len(message.Cards) + 6
 
-	if action, err := ui.SetView(ActionsWidget, 0, maxY-9, maxX-33, maxY-6); err != nil {
+	if action, err := ui.SetView(ActionsWidget, 0, maxY-height, maxX-35, maxY-5); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		action.Title = "Pick a card"
+		action.Title = "Play a card"
 		action.Highlight = true
 		action.SelBgColor = gocui.ColorGreen
 		action.BgColor = gocui.ColorGreen
-		fmt.Fprint(action, "Current card: F1\nPicked card: F2")
+		fmt.Fprint(action, getCardsToPick(message.Cards))
 	}
 
-	if err := ui.SetKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone, ui.PlayCurrentCard); err != nil {
-		return err
-	}
-
-	if err := ui.SetKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone, ui.PlayPickedCard); err != nil {
-		return err
+	for i, _ := range message.Cards {
+		key, pickFunc := ui.pick_getKey(i)
+		if err := ui.SetKeybinding(InputWidget, key, gocui.ModNone, pickFunc); err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+func (ui *UI) pick_getKey(userOrder int) (gocui.Key, func(g *gocui.Gui, v *gocui.View) error) {
+	switch userOrder {
+	case 0:
+		return gocui.KeyF1, ui.PlayCurrentCard
+	case 1:
+		return gocui.KeyF2, ui.PlayPickedCard
+	default:
+		return 0, nil
+	}
+}
+
+func getCardsToPick(cardInfos []chat.CardInfo) string {
+	var opponents string
+	for i, o := range cardInfos {
+		opponents += fmt.Sprintf("F%d. %s\n", i+1, o.Description)
+	}
+
+	return opponents
 }
 
 func (ui *UI) PlayPickedCard(g *gocui.Gui, v *gocui.View) error {
@@ -45,10 +64,8 @@ func (ui *UI) PlayPickedCard(g *gocui.Gui, v *gocui.View) error {
 	}
 
 	v.Clear()
-	ui.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
-	ui.DeleteKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone)
 	ui.DeleteView(ActionsWidget)
-
+	ui.clearGuessCardBindings()
 	return nil
 }
 
@@ -60,10 +77,8 @@ func (ui *UI) PlayCurrentCard(g *gocui.Gui, v *gocui.View) error {
 	}
 
 	v.Clear()
-	ui.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
-	ui.DeleteKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone)
 	ui.DeleteView(ActionsWidget)
-
+	ui.clearGuessCardBindings()
 	return nil
 }
 

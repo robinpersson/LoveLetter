@@ -19,6 +19,7 @@ type Game struct {
 	Deck        card.Deck
 	Started     bool
 	FavorTokens int
+	Round       int
 }
 
 func NewGame() *Game {

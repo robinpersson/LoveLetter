@@ -23,7 +23,9 @@ const (
 	BaronWidget      = "baron action"
 	PrinceWidget     = "prince action"
 	ChancellorWidget = "chancellor action"
+	KingWidget       = "chancellor action"
 	DeckWidget       = "deck"
+	NextPlayer       = "next player"
 )
 
 type UI struct {
@@ -46,7 +48,7 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 	g.Cursor = true
 
-	if controls, err := g.SetView(ControlsWidget, 0, 0, maxX-25, maxY-30); err != nil {
+	if controls, err := g.SetView(ControlsWidget, 0, 0, maxX-35, maxY-32); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -56,7 +58,7 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 		fmt.Fprint(controls, "- start new game: Ctrl+S\n- toggle rules: Ctrl+R")
 	}
 
-	if messages, err := g.SetView(MessageWidget, 0, 5, maxX-15, maxY-5); err != nil {
+	if messages, err := g.SetView(MessageWidget, 0, 4, maxX-35, maxY-5); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -75,7 +77,7 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 	//	action.Editable = false
 	//}
 
-	if input, err := g.SetView(InputWidget, 0, maxY-5, maxX-20, maxY-1); err != nil {
+	if input, err := g.SetView(InputWidget, 0, maxY-4, maxX-35, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -85,25 +87,26 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 		input.Editable = true
 	}
 
-	if users, err := g.SetView(UsersWidget, maxX-33, 0, maxX-1, maxY-1); err != nil {
+	if users, err := g.SetView(UsersWidget, maxX-33, 0, maxX-1, maxY-10); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 		users.Title = UsersWidget
+		users.Frame = true
 		users.Autoscroll = false
 		users.Wrap = true
 	}
 
-	if users, err := g.SetView(DeckWidget, maxX-33, maxY-13, maxX-1, maxY-1); err != nil {
+	if users, err := g.SetView(DeckWidget, maxX-33, maxY-9, maxX-1, maxY-5); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		users.Title = DeckWidget
+		users.Title = "game info"
 		users.Autoscroll = false
 		users.Wrap = true
 	}
 
-	if cards, err := g.SetView(CardsWidget, maxX-33, maxY-10, maxX-1, maxY-1); err != nil {
+	if cards, err := g.SetView(CardsWidget, maxX-33, maxY-4, maxX-1, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -200,10 +203,6 @@ func (ui *UI) ReadMessage() error {
 		}
 
 		ui.Update(func(g *gocui.Gui) error {
-			//ui.DeleteView(PriestWidget)
-			//ui.DeleteView(BaronWidget)
-			//ui.DeleteView(PrinceWidget)
-			//ui.DeleteView(GuardWidget)
 			switch message.Type {
 			case chat.Regular, chat.StartGame:
 				view, err := ui.View(MessageWidget)
@@ -218,8 +217,8 @@ func (ui *UI) ReadMessage() error {
 				}
 				view.Clear()
 				fmt.Fprint(view, message.Formatted())
-			case chat.ActionsMessage:
-				ui.ShowPickCardsView()
+			case chat.PickCard:
+				return ui.ShowPickCardsView(message)
 			case chat.Deck:
 				view, err := ui.View(DeckWidget)
 				if err != nil {
@@ -235,25 +234,42 @@ func (ui *UI) ReadMessage() error {
 				view.Clear()
 				fmt.Fprint(view, message.Text)
 			case chat.Guard:
-				ui.ShowGuardActionView(g, message)
+				if len(message.Opponents) > 0 {
+					return ui.ShowGuardActionView(g, message)
+				}
+				return ui.NextPlayer()
 			case chat.Priest:
-				ui.ShowPriestActionView(g, message)
+				if len(message.Opponents) > 0 {
+					return ui.ShowPriestActionView(g, message)
+				}
+				return ui.NextPlayer()
 			case chat.PriestResponse:
-				ui.ShowPriestResponseActionView(g, message)
+				return ui.ShowPriestResponseActionView(g, message)
 			case chat.Baron:
-				// if no opponents what to do?
-				ui.ShowBaronActionView(g, message)
+				if len(message.Opponents) > 0 {
+					return ui.ShowBaronActionView(g, message)
+				}
+				return ui.NextPlayer()
 			case chat.Prince:
-				ui.ShowPrinceActionView(g, message)
+				return ui.ShowPrinceActionView(g, message)
 			case chat.Chancellor:
-				ui.ShowChancellorActionView(g, message)
+				return ui.ShowChancellorActionView(g, message)
+			case chat.King:
+				if len(message.Opponents) > 0 {
+					return ui.ShowKingActionView(g, message)
+				}
+				return ui.NextPlayer()
+			case chat.RoundFinished:
+				return ui.ShowRoundFinishedView(g, message)
+			case chat.GameFinished:
+				return ui.ShowGameFinishedView(g, message)
+			case chat.Clear:
+				return ui.Clear()
 			}
 
 			return nil
 		})
 	}
-
-	return nil
 }
 
 func (ui *UI) Quit(_ *gocui.Gui, _ *gocui.View) error {

@@ -52,9 +52,11 @@ func (s *Supervisor) SendGameControlMessage(text string) {
 }
 
 func (s *Supervisor) BroadcastDeckCount() {
-	mess := NewMessage(Deck, "Game control", fmt.Sprintf("%d cards left", len(s.Game.Deck.Cards())))
-	//mess.SetTime(time.Now())
-	s.Broadcast(mess)
+	if s.Game != nil {
+		mess := NewMessage(Deck, "Game control", fmt.Sprintf("favor tokens: %d\nround: %d\ndeck: %d cards left", s.Game.FavorTokens, s.Game.Round, len(s.Game.Deck.Cards())))
+		//mess.SetTime(time.Now())
+		s.Broadcast(mess)
+	}
 }
 
 func (s *Supervisor) SendPlayOrder() {
@@ -99,15 +101,16 @@ func (s *Supervisor) CurrentSortedUsers() string {
 
 	var users string
 	for _, u := range s.Users {
+
 		if u.Eliminated {
-			users += fmt.Sprintf("%d. \u001B[31;1m%s\u001B[0m\n", u.Order, u.Name)
+			users += fmt.Sprintf("%d. \u001B[31;1m%s\u001B[0m %s\n", u.Order, u.Name, u.GetTokens())
 		} else if u.IsProtected {
-			users += fmt.Sprintf("%d. \u001B[33;1m%s\u001B[0m\n", u.Order, u.Name)
+			users += fmt.Sprintf("%d. \u001B[33;1m%s\u001B[0m %s\n", u.Order, u.Name, u.GetTokens())
 		} else {
-			users += fmt.Sprintf("%d. \u001B[32;1m%s\u001B[0m\n", u.Order, u.Name)
+			users += fmt.Sprintf("%d. \u001B[32;1m%s\u001B[0m %s\n", u.Order, u.Name, u.GetTokens())
 		}
 
-		if len(u.Cards.Played) > 0 {
+		if u.Cards != nil && len(u.Cards.Played) > 0 {
 			users += addUserCards(u)
 		}
 	}
@@ -173,14 +176,57 @@ func (s *Supervisor) SendToUser(message *Message, user User) error {
 
 	return nil
 }
+func (s *Supervisor) NewRound(winnerOrder int) error {
+	s.Broadcast(&Message{
+		Type: Clear,
+	})
+
+	time.Sleep(time.Millisecond * 300)
+	latestWinner := s.GetPlayerByOrder(winnerOrder)
+
+	//s.StartGame(latestWinner)
+
+	//return nil
+	s.Game.StartNewGame(len(s.Users))
+	s.Game.Round = s.Game.Round + 1
+
+	//s.StartGame(latestWinner)
+
+	for _, user := range s.Users {
+		user.Eliminated = false
+		user.IsProtected = false
+		user.Cards = &Cards{}
+		user.IsInTurn = false
+	}
+
+	s.Broadcast(NewMessage(Regular, latestWinner.Name, "started new round"))
+	time.Sleep(time.Millisecond * 100)
+
+	s.SendPlayOrder()
+
+	latestWinner.DealCard()
+
+	for _, user := range s.Users {
+
+		if user.Order != latestWinner.Order {
+			user.DealCard()
+		}
+	}
+
+	latestWinner.PickCard()
+
+	return nil
+}
 
 func (s *Supervisor) StartGame(userStarted *User) error {
 
 	s.Game.StartNewGame(len(s.Users))
+	s.Game.Round = 1
 
 	s.Broadcast(NewMessage(Regular, userStarted.Name, "started the game"))
 	time.Sleep(time.Millisecond * 100)
 
+	//TODO:
 	//rand.Shuffle(len(s.Users), func(i, j int) { s.Users[i], s.Users[j] = s.Users[j], s.Users[i] })
 
 	s.SendGameControlMessage("Randomizing play order")
@@ -215,6 +261,15 @@ func (s *Supervisor) ServeWS() func(connection *websocket.Conn) {
 }
 
 func (s *Supervisor) NextPlayer(order int) {
+
+	//TODO: Is game over?
+
+	gameOver := s.IsGameOver()
+
+	if gameOver {
+		return
+	}
+
 	if order == len(s.Users) && !s.Users[0].Eliminated {
 		s.Users[0].PickCard()
 		return
@@ -246,35 +301,198 @@ func (s *Supervisor) EliminatePlayer(player *User) {
 	player.Eliminated = true
 	s.SendPlayOrder()
 	s.SendGameControlMessage(fmt.Sprintf("%s is eliminated", player.Name))
-	s.CheckIfGameIsOver()
+	//s.IsGameOver()
 }
 
-//
-//func (s *Supervisor) SetPlayerAsEliminated(player *User) {
-//	for i, u := range s.Users {
-//		if u.Order == player.Order {
-//			s.Users[i].Eliminated = true
-//			return
-//		}
-//	}
-//}
-
-func (s *Supervisor) CheckIfGameIsOver() {
+func (s *Supervisor) IsGameOver() bool {
 	var usersLeft []*User
 	for _, user := range s.Users {
 		if !user.Eliminated {
 			usersLeft = append(usersLeft, user)
 		}
 	}
-
+	//fmt.Printf("USERS left %d", len(usersLeft))
 	if len(usersLeft) == 1 {
 
 		user := s.GetPlayerByOrder(usersLeft[0].Order)
-		// We have a winner
-		user.Tokens += user.Tokens
 
-		//Start new game
+		var spyWinner UserInfo
+		if hasSpy(*user) {
+			user.Tokens += 1
+			spyWinner = UserInfo{Name: user.Name}
+		}
+
+		// We have a round winner
+		user.Tokens += 1
+
+		roundOver := RoundOver{
+			Winners:   []UserInfo{{Name: user.Name, Order: user.Order}},
+			SpyWinner: spyWinner,
+			//WinnerCard: CardInfo{
+			//	Value:       (*user.Cards.Current).Value(),
+			//	Name:        (*user.Cards.Current).Name(),
+			//	Description: (*user.Cards.Current).ToString(),
+			//	Index:       0,
+			//},
+			OutCard: CardInfo{
+				Value:       s.Game.Deck.OutCard().Value(),
+				Name:        s.Game.Deck.OutCard().Name(),
+				Description: s.Game.Deck.OutCard().ToString(),
+				Index:       0,
+			},
+		}
+
+		if user.Tokens >= s.Game.FavorTokens {
+			s.BroadcastText("Game over", "Game control")
+			time.Sleep(time.Millisecond * 200)
+			s.Broadcast(&Message{
+				Type:      GameFinished,
+				From:      "Game control",
+				RoundOver: roundOver,
+			})
+		} else {
+			s.BroadcastText("Round over", "Game control")
+			time.Sleep(time.Millisecond * 200)
+			s.Broadcast(&Message{
+				Type:      RoundFinished,
+				From:      "Game control",
+				RoundOver: roundOver,
+			})
+		}
+
+		return true
 	}
+
+	if len(s.Game.Deck.Cards()) == 0 {
+		s.BroadcastText("GAME OVER", "Game control")
+
+		gameOver := false
+
+		var winnerUsers []UserInfo
+		winners := getWinners(usersLeft)
+		spyCount := 0
+		for _, winner := range winners {
+			if hasSpy(*winner) {
+				spyCount++
+			}
+
+			winner.Tokens += 1
+
+			if winner.Tokens >= s.Game.FavorTokens {
+				gameOver = true
+				// Game finished
+			}
+
+			winnerUsers = append(winnerUsers, UserInfo{Name: winner.Name, Order: winner.Order})
+		}
+
+		var spyWinner UserInfo
+
+		if spyCount == 1 {
+			for _, winner := range winners {
+				if hasSpy(*winner) {
+					spyWinner = UserInfo{Name: winner.Name}
+					winner.Tokens += 1
+					if winner.Tokens >= s.Game.FavorTokens {
+						gameOver = true
+						// Game finished
+					}
+					break
+				}
+			}
+		}
+
+		roundOver := RoundOver{
+			Winners:   winnerUsers,
+			SpyWinner: spyWinner,
+			WinnerCard: CardInfo{
+				Value:       (*winners[0].Cards.Current).Value(),
+				Name:        (*winners[0].Cards.Current).Name(),
+				Description: (*winners[0].Cards.Current).ToString(),
+				Index:       0,
+			},
+			OutCard: CardInfo{
+				Value:       s.Game.Deck.OutCard().Value(),
+				Name:        s.Game.Deck.OutCard().Name(),
+				Description: s.Game.Deck.OutCard().ToString(),
+				Index:       0,
+			},
+		}
+
+		if gameOver {
+			gameWinners := getGameWinners(winners)
+			var gameWinnerUsers []UserInfo
+			for _, winner := range gameWinners {
+				gameWinnerUsers = append(gameWinnerUsers, UserInfo{Name: winner.Name})
+			}
+			roundOver.GameWinners = gameWinnerUsers
+			s.Broadcast(&Message{
+				Type:      GameFinished,
+				From:      "Game control",
+				RoundOver: roundOver,
+			})
+		} else {
+			s.Broadcast(&Message{
+				Type:      RoundFinished,
+				From:      "Game control",
+				RoundOver: roundOver,
+			})
+		}
+
+		return true
+
+	}
+
+	return false
+}
+
+func getWinners(users []*User) []*User {
+	groupedUsers := make(map[int][]*User)
+
+	for _, u := range users {
+		groupedUsers[(*u.Cards.Current).Value()] = append(groupedUsers[(*u.Cards.Current).Value()], u)
+	}
+
+	sortedKeys := make([]int, 0, len(groupedUsers))
+
+	for k := range groupedUsers {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(sortedKeys)))
+
+	return groupedUsers[sortedKeys[0]]
+}
+
+func getGameWinners(users []*User) []*User {
+	groupedUsers := make(map[int][]*User)
+
+	for _, u := range users {
+		groupedUsers[u.Tokens] = append(groupedUsers[u.Tokens], u)
+	}
+
+	sortedKeys := make([]int, 0, len(groupedUsers))
+
+	for k := range groupedUsers {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(sortedKeys)))
+
+	return groupedUsers[sortedKeys[0]]
+}
+
+func hasSpy(user User) bool {
+
+	if (*user.Cards.Current).Name() == "Spy" {
+		return true
+	}
+
+	for _, cc := range user.Cards.Played {
+		if cc.Name() == "Spy" {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (s *Supervisor) getChancellorCards(current card.Card) []card.Card {
@@ -311,41 +529,3 @@ func (s *Supervisor) MapCards(cards []card.Card) []CardInfo {
 
 	return cardInfos
 }
-
-//func (s *Supervisor) getChancellorCards2(current card.Card) []CardInfo {
-//	var cardInfos []CardInfo
-//
-//	cardInfos = append(cardInfos, CardInfo{
-//		Value:       current.Value(),
-//		Name:        current.Name(),
-//		Description: current.ToString(),
-//		Index:       0,
-//	})
-//
-//	card2 := *s.Game.PickCard()
-//
-//	if card2 == nil {
-//		return cardInfos
-//	}
-//
-//	cardInfos = append(cardInfos, CardInfo{
-//		Value:       card2.Value(),
-//		Name:        card2.Name(),
-//		Description: card2.ToString(),
-//		Index:       1,
-//	})
-//
-//	card3 := *s.Game.PickCard()
-//	if card3 == nil {
-//		return cardInfos
-//	}
-//
-//	cardInfos = append(cardInfos, CardInfo{
-//		Value:       card3.Value(),
-//		Name:        card3.Name(),
-//		Description: card3.ToString(),
-//		Index:       2,
-//	})
-//
-//	return cardInfos
-//}

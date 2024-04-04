@@ -14,7 +14,7 @@ func (ui *UI) RulesView() error {
 	maxX, maxY := ui.Size()
 	//name := fmt.Sprintf("v%v", 0)
 	//0, 0, maxX-25, maxY-30
-	v, err := ui.SetView("Rules", 0, 0+5, maxX, maxY)
+	v, err := ui.SetView("Rules", 0, 0+3, maxX-1, maxY-1)
 	if err != nil {
 		if err != gocui.ErrUnknownView {
 			return err

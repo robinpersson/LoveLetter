@@ -35,6 +35,7 @@ func (c king) Value() int {
 func (c king) ActionText() string {
 	return "Write the name of the player which you would like to trade hands with"
 }
+
 func NewKing() King {
 	return &king{CardSettings{
 		description: kingDescription,

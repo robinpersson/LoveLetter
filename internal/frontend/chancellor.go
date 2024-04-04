@@ -19,6 +19,8 @@ func (ui *UI) ShowChancellorActionView(_ *gocui.Gui, message chat.Message) error
 	maxX, maxY := ui.Size()
 	height := len(message.ChancellorCards) + 7
 
+	currentCards = nil
+
 	if chancellor, err := ui.SetView(ChancellorWidget, 0, maxY-height, maxX-33, maxY-6); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err

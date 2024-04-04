@@ -29,8 +29,17 @@ type Cards struct {
 	Picked  *card.Card
 }
 
+func (u *User) GetTokens() string {
+	var t string
+	for _ = range u.Tokens {
+		t += "*"
+	}
+	return t
+}
+
 func (u *User) PickCard() *card.Card {
 	c := u.Supervisor.PickCard()
+	fmt.Println("CAAAARD: %+v", c)
 	u.IsInTurn = true
 	u.Cards.Picked = c
 	u.SendPickedCard()
@@ -57,12 +66,31 @@ func (u *User) DealCard() *card.Card {
 	return &c
 }
 
+func (u *User) DealCard_Temp() *card.Card {
+
+	fmt.Println("666666666 %T", u.Supervisor)
+
+	c := u.Supervisor.PickCard()
+
+	fmt.Println("999999999 %T", c)
+
+	u.Cards.Current = c
+	if u.Order != 1 {
+		u.SendCurrentCard()
+	}
+
+	return c
+}
+
 func (u *User) SendCurrentCard() {
 	u.Write(u.GetCurrentCardMessage())
 }
 
 func (u *User) GetCurrentCardMessage() *Message {
+	fmt.Printf("JJJJJJ %+v, %T", u.Cards.Current, u.Cards.Current)
+
 	cc := *u.Cards.Current
+
 	mess := &Message{
 		Type:      CardMessage,
 		From:      "Game master",
@@ -101,15 +129,76 @@ func (u *User) SendPickedCard() {
 	u.Supervisor.Broadcast(NewMessage(Regular, u.Name, "picked a card"))
 	u.Write(mess)
 	u.PrintPlayActions()
+}
 
+func (u *User) IsForcedToPlayCountess(currentCard *card.Card, pickedCard *card.Card) (bool, bool) {
+
+	if currentCard == nil {
+		return false, false
+	}
+
+	if (*currentCard).Name() == "Countess" {
+		if (*pickedCard).Name() == "King" ||
+			(*pickedCard).Name() == "Prince" {
+			return true, true
+		}
+	}
+
+	if pickedCard == nil {
+		return false, false
+	}
+
+	if (*pickedCard).Name() == "Countess" {
+		if (*currentCard).Name() == "King" ||
+			(*currentCard).Name() == "Prince" {
+			return true, false
+		}
+	}
+
+	return false, false
 }
 
 func (u *User) PrintPlayActions() {
-	m := &Message{
-		Type: ActionsMessage,
-		From: "Game control",
-		Text: "Play current card: Ctrl+H\nPlay picked card: Ctrl+P",
+	currentCard := u.Cards.Current
+	pickedCard := u.Cards.Picked
+	forced, isCurrent := u.IsForcedToPlayCountess(currentCard, pickedCard)
+
+	m := &Message{Type: PickCard}
+
+	if forced {
+		if isCurrent {
+			m.Cards = []CardInfo{{
+				Value:       (*currentCard).Value(),
+				Name:        (*currentCard).Name(),
+				Description: (*currentCard).ToString(),
+				Index:       0,
+			}}
+		} else {
+			m.Cards = []CardInfo{{
+				Value:       (*pickedCard).Value(),
+				Name:        (*pickedCard).Name(),
+				Description: (*pickedCard).ToString(),
+				Index:       0,
+			}}
+		}
+	} else {
+		m.Cards = []CardInfo{{
+			Value:       (*currentCard).Value(),
+			Name:        (*currentCard).Name(),
+			Description: (*currentCard).ToString(),
+			Index:       0,
+		}}
+
+		if pickedCard != nil {
+			m.Cards = append(m.Cards, CardInfo{
+				Value:       (*pickedCard).Value(),
+				Name:        (*pickedCard).Name(),
+				Description: (*pickedCard).ToString(),
+				Index:       1,
+			})
+		}
 	}
+
 	u.Write(m)
 }
 
@@ -143,6 +232,8 @@ func (u *User) Read() {
 			} else {
 				u.Write(NewMessage(Regular, "Game control", "Game already started\n"))
 			}
+		case NewRound:
+			u.Supervisor.NewRound(message.LatestWinnerOrder)
 		case Regular:
 			u.Supervisor.Broadcast(message)
 		case PlayCurrentCard:
@@ -163,6 +254,10 @@ func (u *User) Read() {
 			u.DiscardCard(message.OpponentPlayer.Order)
 		case InsertChancellorCards:
 			u.InsertChancellorCards(message)
+		case TradeCards:
+			u.TradeCards(message.OpponentPlayer.Order)
+		case NextPlayer:
+			u.Supervisor.NextPlayer(u.Order)
 		}
 
 		u.Supervisor.BroadcastDeckCount()
@@ -263,7 +358,7 @@ func (u *User) GuessCard(playerOrder, cardNumber int) {
 }
 
 func (u *User) Write(message *Message) {
-	fmt.Printf("WRITE %d %s to %s\n", message.Type, message.Text, u.Name)
+	//fmt.Printf("WRITE %d %s to %s\n", message.Type, message.Text, u.Name)
 	if err := websocket.JSON.Send(u.Connection, message); err != nil {
 		// EOF connection closed by the client
 		u.Supervisor.Quit(u)
@@ -296,6 +391,11 @@ func (u *User) PlayCurrentCard() {
 func (u *User) PlayCard(cc card.Card) {
 	u.Cards.Played = append(u.Cards.Played, cc)
 	u.IsProtected = cc.Name() == "Handmaid"
+
+	if cc.Name() == "Princess" {
+		u.Supervisor.EliminatePlayer(u)
+	}
+
 	u.Supervisor.SendPlayOrder()
 
 	u.SendCurrentCard()
@@ -309,6 +409,23 @@ func (u *User) PlayCard(cc card.Card) {
 		u.IsInTurn = false
 		u.Supervisor.NextPlayer(u.Order)
 	}
+}
+
+func (u *User) TradeCards(playerOrder int) {
+	opponent := u.Supervisor.GetPlayerByOrder(playerOrder)
+	opponentCard := opponent.Cards.Current
+	playerCard := u.Cards.Current
+
+	opponent.Cards.Current = playerCard
+	u.Cards.Current = opponentCard
+
+	u.SendCurrentCard()
+
+	u.Supervisor.BroadcastText(fmt.Sprintf(" traded card with %s", opponent.Name), u.Name)
+	time.Sleep(time.Millisecond * 200)
+
+	u.IsInTurn = false
+	u.Supervisor.NextPlayer(u.Order)
 }
 
 func (u *User) PrintCardActions(c card.Card) bool {
@@ -391,10 +508,21 @@ func (u *User) PrintCardActions(c card.Card) bool {
 		return c.ActionText() != ""
 	}
 
+	if c.Name() == "King" {
+		m := &Message{
+			Type:      King,
+			From:      "Game control",
+			Text:      "king",
+			Opponents: u.getOpponents(),
+		}
+		u.Write(m)
+		return c.ActionText() != ""
+	}
+
 	actionText := c.ActionText()
 	if actionText != "" {
 		m := &Message{
-			Type: ActionsMessage,
+			Type: PickCard,
 			From: "Game control",
 			Text: actionText,
 		}

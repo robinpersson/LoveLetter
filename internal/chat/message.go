@@ -12,8 +12,10 @@ const (
 	Connected
 	Disconnected
 	StartGame
+	NewRound
+	Clear
 	CardMessage
-	ActionsMessage
+	PickCard
 	PlayCurrentCard
 	PlayPickedCard
 	Guard
@@ -28,7 +30,12 @@ const (
 	DiscardCard
 	Chancellor
 	InsertChancellorCards
+	King
+	TradeCards
 	Deck
+	NextPlayer
+	RoundFinished
+	GameFinished
 )
 
 type CardInfo struct {
@@ -49,17 +56,28 @@ type Guess struct {
 	Card        int
 }
 
+type RoundOver struct {
+	Winners     []UserInfo
+	SpyWinner   UserInfo
+	WinnerCard  CardInfo
+	OutCard     CardInfo
+	GameWinners []UserInfo
+}
+
 type Message struct {
-	Type            MessageType `json:"type"`
-	From            string      `json:"from"`
-	Text            string      `json:"text"`
-	Timestamp       string      `json:"timestamp"`
-	CurrentCard     CardInfo    `json:"cardInfo"`
-	PickedCard      CardInfo    `json:"pickedCard"`
-	Opponents       []UserInfo  `json:"opponents"`
-	GuardGuess      Guess       `json:"guardGuess"`
-	OpponentPlayer  UserInfo    `json:"opponentPlayer"`
-	ChancellorCards []CardInfo  `json:"chancellorCards"`
+	Type              MessageType `json:"type"`
+	From              string      `json:"from"`
+	Text              string      `json:"text"`
+	Timestamp         string      `json:"timestamp"`
+	Cards             []CardInfo  `json:"cards"`
+	CurrentCard       CardInfo    `json:"cardInfo"`
+	PickedCard        CardInfo    `json:"pickedCard"`
+	Opponents         []UserInfo  `json:"opponents"`
+	GuardGuess        Guess       `json:"guardGuess"`
+	OpponentPlayer    UserInfo    `json:"opponentPlayer"`
+	ChancellorCards   []CardInfo  `json:"chancellorCards"`
+	RoundOver         RoundOver   `json:"roundOver"`
+	LatestWinnerOrder int         `json:"latesWinnerOrder"`
 }
 
 func NewMessage(msgType MessageType, from string, text string) *Message {
