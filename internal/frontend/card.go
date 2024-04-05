@@ -13,9 +13,11 @@ import (
 
 func (ui *UI) ShowPickCardsView(message chat.Message) error {
 	maxX, maxY := ui.Size()
-	height := len(message.Cards) + 6
+	yStart := maxY - int(float64(maxY)*0.84)
+	items := 2
+	width := maxX - int(float64(maxX)*0.2)
 
-	if action, err := ui.SetView(ActionsWidget, 0, maxY-height, maxX-35, maxY-5); err != nil {
+	if action, err := ui.SetView(ActionsWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -23,7 +25,7 @@ func (ui *UI) ShowPickCardsView(message chat.Message) error {
 		action.Highlight = true
 		action.SelBgColor = gocui.ColorGreen
 		action.BgColor = gocui.ColorGreen
-		fmt.Fprint(action, getCardsToPick(message.Cards))
+		_, _ = fmt.Fprint(action, getCardsToPick(message.Cards))
 	}
 
 	for i, _ := range message.Cards {
@@ -48,12 +50,12 @@ func (ui *UI) pick_getKey(userOrder int) (gocui.Key, func(g *gocui.Gui, v *gocui
 }
 
 func getCardsToPick(cardInfos []chat.CardInfo) string {
-	var opponents string
+	var opp string
 	for i, o := range cardInfos {
-		opponents += fmt.Sprintf("F%d. %s\n", i+1, o.Description)
+		opp += fmt.Sprintf("F%d. %s\n", i+1, o.Description)
 	}
 
-	return opponents
+	return opp
 }
 
 func (ui *UI) PlayPickedCard(g *gocui.Gui, v *gocui.View) error {
@@ -64,7 +66,7 @@ func (ui *UI) PlayPickedCard(g *gocui.Gui, v *gocui.View) error {
 	}
 
 	v.Clear()
-	ui.DeleteView(ActionsWidget)
+	_ = ui.DeleteView(ActionsWidget)
 	ui.clearGuessCardBindings()
 	return nil
 }
@@ -77,26 +79,26 @@ func (ui *UI) PlayCurrentCard(g *gocui.Gui, v *gocui.View) error {
 	}
 
 	v.Clear()
-	ui.DeleteView(ActionsWidget)
+	_ = ui.DeleteView(ActionsWidget)
 	ui.clearGuessCardBindings()
 	return nil
 }
 
-func deletePickCardBindings(g *gocui.Gui) {
-	g.DeleteView(ActionsWidget)
-	g.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
-	g.DeleteKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone)
-}
-
 func getCards() string {
-	return "F1 Spy\nF2 Priest\nF3 Baron\nF4 Handmaid\nF5 Prince\nF6 Chancellor\nF7 King\nF8 Countess\nF9 Princess"
+	return "F1. Spy\nF2. Priest\nF3. Baron\nF4. Handmaid\nF5. Prince\nF6. Chancellor\nF7. King\nF8. Countess\nF9. Princess"
 }
 
-func (ui *UI) printGuessCards(g *gocui.Gui) {
+func (ui *UI) printGuessCards(g *gocui.Gui, opponentName string) {
 	maxX, maxY := ui.Size()
-	g.SetView(GuardWidget, 0, maxY-16, maxX-33, maxY-6)
+
+	yStart := maxY - int(float64(maxY)*0.84)
+	items := 9
+	//itemRow := int(maxY / items)
+	width := maxX - int(float64(maxX)*0.2)
+
+	g.SetView(GuardWidget, 0, maxY-yStart-items, width, maxY-yStart+1)
 	view, _ := g.View(GuardWidget)
 	view.Clear()
-	view.Title = "select card"
-	fmt.Fprint(view, getCards())
+	view.Title = fmt.Sprintf("select which card you think %s has", opponentName)
+	_, _ = fmt.Fprint(view, getCards())
 }

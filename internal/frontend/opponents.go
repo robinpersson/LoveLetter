@@ -10,10 +10,10 @@ import (
 )
 
 func getOpponents(userInfo []chat.UserInfo) string {
-	var opponents string
+	var opp string
 	for _, o := range userInfo {
-		opponents += fmt.Sprintf("F%d. %s\n", o.Order, o.Name)
+		opp += fmt.Sprintf("F%d. %s\n", o.Order, o.Name)
 	}
 
-	return opponents
+	return opp
 }

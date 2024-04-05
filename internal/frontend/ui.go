@@ -46,19 +46,26 @@ func NewUI() (*UI, error) {
 
 func (ui *UI) Layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
+	//fmt.Println(maxX, maxY)
+	height := maxY - int(float64(maxY)*0.95) // 5% height
+	width := maxX - int(float64(maxX)*0.2)   // 80% width
+	//t20 := int(float64(maxX) * 0.8)
 	g.Cursor = true
 
-	if controls, err := g.SetView(ControlsWidget, 0, 0, maxX-35, maxY-32); err != nil {
+	if controls, err := g.SetView(ControlsWidget, 0, 0, width, height); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 		controls.Title = ControlsWidget
 		controls.Autoscroll = true
 		controls.Wrap = true
-		fmt.Fprint(controls, "- start new game: Ctrl+S\n- toggle rules: Ctrl+R")
+		_, _ = fmt.Fprint(controls, "- start new game: Ctrl+S\n- toggle rules: Ctrl+R")
 	}
 
-	if messages, err := g.SetView(MessageWidget, 0, 4, maxX-35, maxY-5); err != nil {
+	height = maxY - int(float64(maxY)*0.3)
+	width = maxX - int(float64(maxX)*0.2)
+	//fmt.Println(height, width)
+	if messages, err := g.SetView(MessageWidget, 0, 4, width, height); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -77,7 +84,9 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 	//	action.Editable = false
 	//}
 
-	if input, err := g.SetView(InputWidget, 0, maxY-4, maxX-35, maxY-1); err != nil {
+	height = maxY - int(float64(maxY)*0.90) // 10% height
+	width = maxX - int(float64(maxX)*0.2)   // 80% width
+	if input, err := g.SetView(InputWidget, 0, maxY-height, width, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -87,7 +96,10 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 		input.Editable = true
 	}
 
-	if users, err := g.SetView(UsersWidget, maxX-33, 0, maxX-1, maxY-10); err != nil {
+	height = maxY - int(float64(maxY)*0.3) // 70% height
+	width = maxX - int(float64(maxX)*0.83) // 80% width
+
+	if users, err := g.SetView(UsersWidget, maxX-width, 0, maxX-1, height); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -97,7 +109,10 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 		users.Wrap = true
 	}
 
-	if users, err := g.SetView(DeckWidget, maxX-33, maxY-9, maxX-1, maxY-5); err != nil {
+	height = maxY - int(float64(maxY)*0.75)   // 70% height
+	height2 := maxY - int(float64(maxY)*0.86) // 70% height
+	width = maxX - int(float64(maxX)*0.83)    // 80% width
+	if users, err := g.SetView(DeckWidget, maxX-width, maxY-height, maxX-1, maxY-height2); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -106,7 +121,9 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 		users.Wrap = true
 	}
 
-	if cards, err := g.SetView(CardsWidget, maxX-33, maxY-4, maxX-1, maxY-1); err != nil {
+	height = maxY - int(float64(maxY)*0.90) // 10% height
+	width = maxX - int(float64(maxX)*0.83)
+	if cards, err := g.SetView(CardsWidget, maxX-width, maxY-height, maxX-1, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -209,14 +226,14 @@ func (ui *UI) ReadMessage() error {
 				if err != nil {
 					return fmt.Errorf("UI.ReadMessage: %w", err)
 				}
-				fmt.Fprint(view, message.Formatted())
+				_, _ = fmt.Fprint(view, message.Formatted())
 			case chat.CardMessage:
 				view, err := ui.View(CardsWidget)
 				if err != nil {
 					return fmt.Errorf("UI.ReadMessage: %w", err)
 				}
 				view.Clear()
-				fmt.Fprint(view, message.Formatted())
+				_, _ = fmt.Fprint(view, message.Formatted())
 			case chat.PickCard:
 				return ui.ShowPickCardsView(message)
 			case chat.Deck:
@@ -225,14 +242,14 @@ func (ui *UI) ReadMessage() error {
 					return fmt.Errorf("UI.ReadMessage: %w", err)
 				}
 				view.Clear()
-				fmt.Fprint(view, message.Text)
+				_, _ = fmt.Fprint(view, message.Text)
 			case chat.Connected, chat.Disconnected:
 				view, err := ui.View(UsersWidget)
 				if err != nil {
 					return fmt.Errorf("UI.ReadMessage: %w", err)
 				}
 				view.Clear()
-				fmt.Fprint(view, message.Text)
+				_, _ = fmt.Fprint(view, message.Text)
 			case chat.Guard:
 				if len(message.Opponents) > 0 {
 					return ui.ShowGuardActionView(g, message)
@@ -243,8 +260,8 @@ func (ui *UI) ReadMessage() error {
 					return ui.ShowPriestActionView(g, message)
 				}
 				return ui.NextPlayer()
-			case chat.PriestResponse:
-				return ui.ShowPriestResponseActionView(g, message)
+			//case chat.PriestResponse:
+			//	return ui.ShowPriestResponseActionView(g, message)
 			case chat.Baron:
 				if len(message.Opponents) > 0 {
 					return ui.ShowBaronActionView(g, message)
@@ -253,7 +270,10 @@ func (ui *UI) ReadMessage() error {
 			case chat.Prince:
 				return ui.ShowPrinceActionView(g, message)
 			case chat.Chancellor:
-				return ui.ShowChancellorActionView(g, message)
+				if len(message.ChancellorCards) > 1 {
+					return ui.ShowChancellorActionView(g, message)
+				}
+				//return ui.NextPlayer()
 			case chat.King:
 				if len(message.Opponents) > 0 {
 					return ui.ShowKingActionView(g, message)

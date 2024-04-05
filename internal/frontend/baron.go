@@ -5,6 +5,7 @@
 package frontend
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/robinpersson/LoveLetter/internal/chat"
@@ -13,17 +14,20 @@ import (
 
 func (ui *UI) ShowBaronActionView(_ *gocui.Gui, message chat.Message) error {
 	maxX, maxY := ui.Size()
-	height := len(message.Opponents) + 7
+	yStart := maxY - int(float64(maxY)*0.84)
+	items := len(message.Opponents)
+	width := maxX - int(float64(maxX)*0.2)
 
-	if baron, err := ui.SetView(BaronWidget, 0, maxY-height, maxX-33, maxY-6); err != nil {
-		if err != gocui.ErrUnknownView {
+	if baron, err := ui.SetView(BaronWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
+		if !errors.Is(err, gocui.ErrUnknownView) {
+			fmt.Println(err)
 			return err
 		}
 		baron.Title = "select the player you want to compare hands with"
 		baron.Highlight = true
 		baron.SelBgColor = gocui.ColorGreen
 		baron.BgColor = gocui.ColorGreen
-		fmt.Fprint(baron, getOpponents(message.Opponents))
+		_, _ = fmt.Fprint(baron, getOpponents(message.Opponents))
 	}
 
 	for _, u := range message.Opponents {
@@ -66,7 +70,7 @@ func (ui *UI) CompareCard(playerNumber int) error {
 		return fmt.Errorf("UI.WriteMessage: %w", err)
 	}
 
-	ui.DeleteView(BaronWidget)
+	_ = ui.DeleteView(BaronWidget)
 	ui.clearGuessCardBindings()
 
 	return nil

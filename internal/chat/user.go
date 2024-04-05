@@ -16,6 +16,7 @@ type User struct {
 	Supervisor          *Supervisor     `json:"-"`
 	Cards               *Cards          `json:"-"`
 	IsInTurn            bool            `json:"-"`
+	Admin               bool            `json:"-"`
 	Tokens              int             `json:"-"`
 	IsProtected         bool            `json:"-"`
 	Eliminated          bool            `json:"-"`
@@ -39,7 +40,6 @@ func (u *User) GetTokens() string {
 
 func (u *User) PickCard() *card.Card {
 	c := u.Supervisor.PickCard()
-	fmt.Println("CAAAARD: %+v", c)
 	u.IsInTurn = true
 	u.Cards.Picked = c
 	u.SendPickedCard()
@@ -47,47 +47,37 @@ func (u *User) PickCard() *card.Card {
 }
 
 func (u *User) DiscardCardAndPick() *card.Card {
-	c := u.Supervisor.PickCard()
+	c := *u.Supervisor.PickCard()
 	u.Cards.Played = append(u.Cards.Played, *u.Cards.Current)
-	u.Cards.Current = c
+	u.Cards.Current = &c
 	u.SendCurrentCard()
 	time.Sleep(time.Millisecond * 200)
 	u.Supervisor.SendPlayOrder()
-	return u.Cards.Picked
+	return &c
 }
 
 func (u *User) DealCard() *card.Card {
 	c := *u.Supervisor.PickCard()
 	u.Cards.Current = &c
-	if u.Order != 1 {
-		u.SendCurrentCard()
-	}
+	u.SendCurrentCard()
 
 	return &c
 }
 
-func (u *User) DealCard_Temp() *card.Card {
+func (u *User) SendCurrentCard() {
+	mess := u.GetCurrentCardMessage()
 
-	fmt.Println("666666666 %T", u.Supervisor)
-
-	c := u.Supervisor.PickCard()
-
-	fmt.Println("999999999 %T", c)
-
-	u.Cards.Current = c
-	if u.Order != 1 {
-		u.SendCurrentCard()
+	if mess != nil {
+		u.Write(u.GetCurrentCardMessage())
 	}
 
-	return c
-}
-
-func (u *User) SendCurrentCard() {
-	u.Write(u.GetCurrentCardMessage())
 }
 
 func (u *User) GetCurrentCardMessage() *Message {
-	fmt.Printf("JJJJJJ %+v, %T", u.Cards.Current, u.Cards.Current)
+
+	if u.Cards.Current == nil {
+		return nil
+	}
 
 	cc := *u.Cards.Current
 
@@ -222,7 +212,6 @@ func (u *User) Read() {
 			u.Supervisor.Quit(u)
 			break
 		}
-		fmt.Printf("READ %d %s, User: %s: \n", message.Type, message.Text, u.Name)
 		message.SetTime(time.Now())
 
 		switch message.Type {
@@ -280,8 +269,6 @@ func (u *User) InsertChancellorCards(message *Message) {
 
 	var cardsToInsert []card.Card
 
-	fmt.Println(u.ChancellorCards)
-
 	for _, chCard := range message.ChancellorCards {
 		cc := u.getChancellorCardByValue(chCard.Value)
 		cardsToInsert = append(cardsToInsert, *cc)
@@ -305,7 +292,12 @@ func (u *User) DiscardCard(opponentOrder int) {
 
 	u.Supervisor.BroadcastText(fmt.Sprintf("made %s discard his %s", opponent.Name, opponentCard.ToString()), u.Name)
 	time.Sleep(time.Millisecond * 200)
-	opponent.DiscardCardAndPick()
+
+	if opponentCard.Name() == "Princess" {
+		u.Supervisor.EliminatePlayer(opponent)
+	} else {
+		opponent.DiscardCardAndPick()
+	}
 
 	u.IsInTurn = false
 	u.Supervisor.NextPlayer(u.Order)
@@ -315,6 +307,9 @@ func (u *User) CompareHands(opponentOrder int) {
 	opponent := u.Supervisor.GetPlayerByOrder(opponentOrder)
 	opponentCard := *opponent.Cards.Current
 	userCard := *u.Cards.Current
+
+	//fmt.Println("Opponent card:", opponentCard.ToString())
+	//fmt.Println("Users card:", userCard.ToString())
 
 	if opponentCard.Value() > userCard.Value() {
 		//Opponent win
@@ -351,14 +346,13 @@ func (u *User) GuessCard(playerOrder, cardNumber int) {
 	} else {
 		u.Supervisor.BroadcastText(fmt.Sprintf("guessed that %s had %s, which was incorrect", player.Name, guessedCard.ToString()), u.Name)
 	}
-	time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Millisecond * 300)
 	u.IsInTurn = false
 	u.Supervisor.NextPlayer(u.Order)
 
 }
 
 func (u *User) Write(message *Message) {
-	//fmt.Printf("WRITE %d %s to %s\n", message.Type, message.Text, u.Name)
 	if err := websocket.JSON.Send(u.Connection, message); err != nil {
 		// EOF connection closed by the client
 		u.Supervisor.Quit(u)
@@ -376,7 +370,10 @@ func (u *User) broadcastPickedCard(cc card.Card) {
 }
 
 func (u *User) PlayPickedCard() {
-	cc := *u.Cards.Picked //TODO: NULL
+	if u.Cards.Picked == nil {
+		return
+	}
+	cc := *u.Cards.Picked
 	u.Cards.Picked = nil
 	u.PlayCard(cc)
 }
@@ -503,9 +500,11 @@ func (u *User) PrintCardActions(c card.Card) bool {
 		if len(u.ChancellorCards) != 1 {
 			time.Sleep(time.Millisecond * 100)
 			u.Supervisor.BroadcastText(fmt.Sprintf("picked %d cards", len(u.ChancellorCards)-1), u.Name)
+			return true
+		} else {
+			return false
 		}
 
-		return c.ActionText() != ""
 	}
 
 	if c.Name() == "King" {
@@ -535,8 +534,17 @@ func (u *User) PrintCardActions(c card.Card) bool {
 func (u *User) getOpponents() []UserInfo {
 	var opponents []UserInfo
 	for i, user := range u.Supervisor.Users {
-		if user.Order != u.Order && !user.IsProtected {
-			opponents = append(opponents, UserInfo{Name: user.Name, Number: i, Order: user.Order})
+		if user.Order != u.Order && !user.IsProtected && !user.Eliminated {
+			if user.Cards.Current != nil {
+				cc := *user.Cards.Current
+				opponents = append(opponents, UserInfo{Name: user.Name, Number: i, Order: user.Order, CardInfo: CardInfo{
+					Value:       0,
+					Name:        "",
+					Description: cc.ToString(),
+					Index:       0,
+				}})
+			}
+
 		}
 	}
 
@@ -546,8 +554,12 @@ func (u *User) getOpponents() []UserInfo {
 func (u *User) getOpponentsIncludedCurrent() []UserInfo {
 	var opponents []UserInfo
 	for i, user := range u.Supervisor.Users {
-		if !user.IsProtected {
-			opponents = append(opponents, UserInfo{Name: user.Name, Number: i, Order: user.Order})
+		if !user.IsProtected && !user.Eliminated {
+			name := user.Name
+			if u.Order == user.Order {
+				name = "You"
+			}
+			opponents = append(opponents, UserInfo{Name: name, Number: i, Order: user.Order})
 		}
 	}
 

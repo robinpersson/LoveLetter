@@ -24,7 +24,7 @@ func (ui *UI) StartGame(g *gocui.Gui, v *gocui.View) error {
 	v.SetCursor(0, 0)
 	v.Clear()
 
-	g.DeleteKeybinding(InputWidget, gocui.KeyCtrlS, gocui.ModNone)
+	_ = g.DeleteKeybinding(InputWidget, gocui.KeyCtrlS, gocui.ModNone)
 
 	return nil
 }
@@ -78,7 +78,7 @@ func (ui *UI) ShowRoundFinishedView(_ *gocui.Gui, message chat.Message) error {
 		winnerText += fmt.Sprintf("face down card was: %s\n\n", message.RoundOver.OutCard.Description)
 
 		winnerText += "next round will start shortly..."
-		fmt.Fprint(v, myFigure.String()+winnerText)
+		_, _ = fmt.Fprint(v, myFigure.String()+winnerText)
 
 		ui.startCountDown(message.RoundOver.Winners[0].Order, message.RoundOver.Winners[0].Name)
 	}

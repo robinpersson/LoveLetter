@@ -63,16 +63,17 @@ func (d *deck) Shuffle() {
 func (d *deck) fakeInit() {
 	var cards []Card
 
-	cards = append(cards, NewCountess())
-	cards = append(cards, NewKing())
+	cards = append(cards, NewPriest())
+	cards = append(cards, NewGuard())
+	cards = append(cards, NewPriest())
 	//cards = append(cards, NewPrincess())
 	//cards = append(cards, NewCountess())
 	//cards = append(cards, NewCountess())
-	cards = append(cards, NewCountess())
+	cards = append(cards, NewBaron())
 	d.outCard = NewPrince()
 	//cards = append(cards, NewHandmaid())
-	//cards = append(cards, NewKing())
-	//cards = append(cards, NewChancellor())
+	cards = append(cards, NewGuard())
+	cards = append(cards, NewPrince())
 	//cards = append(cards, NewPrincess())
 	//cards = append(cards, NewSpy())
 

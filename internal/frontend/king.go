@@ -5,6 +5,7 @@
 package frontend
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/robinpersson/LoveLetter/internal/chat"
@@ -13,17 +14,20 @@ import (
 
 func (ui *UI) ShowKingActionView(_ *gocui.Gui, message chat.Message) error {
 	maxX, maxY := ui.Size()
-	height := len(message.Opponents) + 7
+	yStart := maxY - int(float64(maxY)*0.84)
+	items := len(message.Opponents)
+	width := maxX - int(float64(maxX)*0.2)
 
-	if king, err := ui.SetView(KingWidget, 0, maxY-height, maxX-33, maxY-6); err != nil {
-		if err != gocui.ErrUnknownView {
+	if king, err := ui.SetView(KingWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
+		if !errors.Is(err, gocui.ErrUnknownView) {
+			fmt.Println(err)
 			return err
 		}
 		king.Title = "select user to swap card with"
 		king.Highlight = true
 		king.SelBgColor = gocui.ColorGreen
 		king.BgColor = gocui.ColorGreen
-		fmt.Fprint(king, getOpponents(message.Opponents))
+		_, _ = fmt.Fprint(king, getOpponents(message.Opponents))
 	}
 
 	for _, u := range message.Opponents {
@@ -90,7 +94,7 @@ func (ui *UI) TradeCards(playerNumber int) error {
 		return fmt.Errorf("UI.WriteMessage: %w", err)
 	}
 
-	ui.DeleteView(KingWidget)
+	_ = ui.DeleteView(KingWidget)
 	ui.clearGuessCardBindings()
 
 	return nil

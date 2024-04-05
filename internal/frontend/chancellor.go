@@ -5,6 +5,7 @@
 package frontend
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/robinpersson/LoveLetter/internal/chat"
@@ -17,12 +18,15 @@ var keepCard chat.CardInfo
 
 func (ui *UI) ShowChancellorActionView(_ *gocui.Gui, message chat.Message) error {
 	maxX, maxY := ui.Size()
-	height := len(message.ChancellorCards) + 7
+	yStart := maxY - int(float64(maxY)*0.84)
+	items := len(message.ChancellorCards)
+	width := maxX - int(float64(maxX)*0.2)
 
 	currentCards = nil
 
-	if chancellor, err := ui.SetView(ChancellorWidget, 0, maxY-height, maxX-33, maxY-6); err != nil {
-		if err != gocui.ErrUnknownView {
+	if chancellor, err := ui.SetView(ChancellorWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
+		if !errors.Is(err, gocui.ErrUnknownView) {
+			fmt.Println(err)
 			return err
 		}
 		chancellor.Title = "select card to keep"
@@ -30,7 +34,7 @@ func (ui *UI) ShowChancellorActionView(_ *gocui.Gui, message chat.Message) error
 		chancellor.SelBgColor = gocui.ColorGreen
 		chancellor.BgColor = gocui.ColorGreen
 		currentCards = message.ChancellorCards
-		fmt.Fprint(chancellor, getChancellorCards(message.ChancellorCards))
+		_, _ = fmt.Fprint(chancellor, getChancellorCards(message.ChancellorCards))
 	}
 
 	for _, u := range message.ChancellorCards {
@@ -44,11 +48,14 @@ func (ui *UI) ShowChancellorActionView(_ *gocui.Gui, message chat.Message) error
 }
 
 func (ui *UI) ShowChancellorActionOrderView() error {
-	ui.DeleteView(ChancellorWidget)
-	maxX, maxY := ui.Size()
-	height := len(currentCards) + 7
+	_ = ui.DeleteView(ChancellorWidget)
 
-	if chancellor, err := ui.SetView(ChancellorWidget, 0, maxY-height, maxX-33, maxY-6); err != nil {
+	maxX, maxY := ui.Size()
+	yStart := maxY - int(float64(maxY)*0.84)
+	items := len(currentCards)
+	width := maxX - int(float64(maxX)*0.2)
+
+	if chancellor, err := ui.SetView(ChancellorWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -57,7 +64,7 @@ func (ui *UI) ShowChancellorActionOrderView() error {
 		chancellor.SelBgColor = gocui.ColorGreen
 		chancellor.BgColor = gocui.ColorGreen
 		//currentCards = message.ChancellorCards
-		fmt.Fprint(chancellor, getChancellorCards(currentCards))
+		_, _ = fmt.Fprint(chancellor, getChancellorCards(currentCards))
 	}
 
 	for i, _ := range currentCards {
@@ -102,7 +109,7 @@ func (ui *UI) KeepCard(cardIndex int) error {
 	cardsView, _ := ui.View(CardsWidget)
 	cardsView.Clear()
 	currentCardPrint := fmt.Sprintf("Current card: %s\nPicked card:", keepCard.Description)
-	fmt.Fprint(cardsView, currentCardPrint)
+	_, _ = fmt.Fprint(cardsView, currentCardPrint)
 
 	if len(currentCards) == 0 {
 		return ui.SendChancellorCards(false)
@@ -130,7 +137,7 @@ func (ui *UI) SendChancellorCards(firstBottom bool) error {
 		return fmt.Errorf("UI.WriteMessage: %w", err)
 	}
 
-	ui.DeleteView(ChancellorWidget)
+	_ = ui.DeleteView(ChancellorWidget)
 	ui.clearGuessCardBindings()
 	return nil
 }

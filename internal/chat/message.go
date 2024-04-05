@@ -46,9 +46,10 @@ type CardInfo struct {
 }
 
 type UserInfo struct {
-	Name   string
-	Number int
-	Order  int
+	Name     string
+	Number   int
+	Order    int
+	CardInfo CardInfo
 }
 
 type Guess struct {

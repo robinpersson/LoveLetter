@@ -5,25 +5,32 @@
 package frontend
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/robinpersson/LoveLetter/internal/chat"
 	"golang.org/x/net/websocket"
 )
 
+var priestOpponents []chat.UserInfo
+
 func (ui *UI) ShowPriestActionView(_ *gocui.Gui, message chat.Message) error {
 	maxX, maxY := ui.Size()
-	height := len(message.Opponents) + 7
-
-	if priest, err := ui.SetView(PriestWidget, 0, maxY-height, maxX-33, maxY-6); err != nil {
-		if err != gocui.ErrUnknownView {
+	yStart := maxY - int(float64(maxY)*0.84)
+	items := len(message.Opponents)
+	width := maxX - int(float64(maxX)*0.2)
+	priestOpponents = nil
+	if priest, err := ui.SetView(PriestWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
+		if !errors.Is(err, gocui.ErrUnknownView) {
+			fmt.Println(err)
 			return err
 		}
 		priest.Title = "select the player which card you want to see"
 		priest.Highlight = true
 		priest.SelBgColor = gocui.ColorGreen
 		priest.BgColor = gocui.ColorGreen
-		fmt.Fprint(priest, getOpponents(message.Opponents))
+		priestOpponents = message.Opponents
+		_, _ = fmt.Fprint(priest, getOpponents(message.Opponents))
 	}
 
 	for _, u := range message.Opponents {
@@ -38,11 +45,15 @@ func (ui *UI) ShowPriestActionView(_ *gocui.Gui, message chat.Message) error {
 
 func (ui *UI) ShowPriestResponseActionView(_ *gocui.Gui, message chat.Message) error {
 	maxX, maxY := ui.Size()
+	yStart := maxY - int(float64(maxY)*0.84)
+	items := 2
+	width := maxX - int(float64(maxX)*0.2)
 
-	ui.DeleteView(PriestWidget)
+	//_ = ui.DeleteView(PriestWidget)
 
-	if priest, err := ui.SetView(PriestWidget, 0, maxY-9, maxX-33, maxY-6); err != nil {
-		if err != gocui.ErrUnknownView {
+	if priest, err := ui.SetView(PriestWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
+		if !errors.Is(err, gocui.ErrUnknownView) {
+			fmt.Println(err)
 			return err
 		}
 		//priest.Clear()
@@ -50,26 +61,59 @@ func (ui *UI) ShowPriestResponseActionView(_ *gocui.Gui, message chat.Message) e
 		priest.Highlight = true
 		priest.SelBgColor = gocui.ColorGreen
 		priest.BgColor = gocui.ColorGreen
-		fmt.Fprint(priest, message.Text+"\nPress F1 to discard")
+		_, _ = fmt.Fprint(priest, message.Text+"\nPress F1 to discard")
 	}
 
 	err := ui.SetKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-		ui.sendPriestDiscardMessage(message.OpponentPlayer.Name)
-		return ui.DeleteView(PriestWidget)
+		return ui.sendPriestDiscardMessage(message.OpponentPlayer.Name)
+
+		//return _ = ui.DeleteView(PriestWidget)
 	})
 
 	return err
 }
 
 func (ui *UI) ViewCard(playerNumber int) error {
-	message := chat.Message{
-		Type:           chat.PriestRequest,
-		From:           ui.username,
-		OpponentPlayer: chat.UserInfo{Order: playerNumber},
-	}
 
-	if err := websocket.JSON.Send(ui.connection, message); err != nil {
-		return fmt.Errorf("UI.WriteMessage: %w", err)
+	maxX, maxY := ui.Size()
+	yStart := maxY - int(float64(maxY)*0.84)
+	items := 2
+	width := maxX - int(float64(maxX)*0.2)
+
+	ui.clearGuessCardBindings()
+
+	v, _ := ui.View(PriestWidget)
+	v.Clear()
+	_ = ui.DeleteView(PriestWidget)
+
+	if priest, err := ui.SetView(PriestWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
+		if !errors.Is(err, gocui.ErrUnknownView) {
+			fmt.Println(err)
+			return err
+		}
+		//priest.Clear()
+		priest.Title = "priest"
+		priest.Highlight = true
+		priest.SelBgColor = gocui.ColorGreen
+		priest.BgColor = gocui.ColorGreen
+
+		card := ""
+		playerName := ""
+		fmt.Println(priestOpponents)
+		for _, u := range priestOpponents {
+			if u.Order == playerNumber {
+				playerName = u.Name
+				card = fmt.Sprintf("%s has %s", u.Name, u.CardInfo.Description)
+			}
+		}
+
+		_ = ui.SetKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+			return ui.sendPriestDiscardMessage(playerName)
+
+			//return _ = ui.DeleteView(PriestWidget)
+		})
+
+		_, _ = fmt.Fprint(priest, card+"\nPress F1 to discard")
 	}
 
 	return nil
@@ -95,9 +139,9 @@ func (ui *UI) sendPriestDiscardMessage(name string) error {
 		return fmt.Errorf("UI.WriteMessage: %w", err)
 	}
 
-	err := ui.DeleteView(PriestWidget)
+	_ = ui.DeleteView(PriestWidget)
 	ui.clearGuessCardBindings()
-	return err
+	return nil
 }
 
 func (ui *UI) Priest_PickPlayer1(g *gocui.Gui, _ *gocui.View) error {
