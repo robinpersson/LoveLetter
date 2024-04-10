@@ -156,3 +156,22 @@ func (ui *UI) Clear() error {
 	ui.SetManagerFunc(ui.Layout)
 	return ui.SetKeyBindings(ui.Gui)
 }
+
+func (ui *UI) GameControl(isAdmin bool) error {
+	v, err := ui.View(ControlsWidget)
+
+	if err != nil {
+		return err
+	}
+
+	v.Clear()
+
+	if isAdmin {
+		_, _ = fmt.Fprint(v, "start new game: Ctrl+S\ntoggle rules: Ctrl+R")
+	} else {
+		_, _ = fmt.Fprint(v, "toggle rules: Ctrl+R")
+		return ui.DeleteKeybinding(InputWidget, gocui.KeyCtrlS, gocui.ModNone)
+	}
+
+	return err
+}

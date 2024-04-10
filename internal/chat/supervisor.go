@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/robinpersson/LoveLetter/internal/card"
 	"github.com/robinpersson/LoveLetter/internal/game"
+	"net/http"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,7 +34,7 @@ func (s *Supervisor) InsertCards(cardsToInsert []card.Card) {
 	s.Game.InsertCards(cardsToInsert)
 }
 
-func (s *Supervisor) Join(user *User) {
+func (s *Supervisor) Join(user *User) error {
 	s.mu.Lock()
 
 	if len(s.Users) == 0 {
@@ -47,6 +49,10 @@ func (s *Supervisor) Join(user *User) {
 	notification.SetTime(time.Now())
 
 	s.Broadcast(notification)
+
+	user.Write(&Message{Type: GameControl, IsAdmin: user.Admin})
+
+	return nil
 }
 
 func (s *Supervisor) SendGameControlMessage(text string) {
@@ -85,6 +91,8 @@ func (s *Supervisor) Quit(user *User) {
 	notification.SetTime(time.Now())
 
 	s.Broadcast(notification)
+
+	s.Broadcast(NewMessage(Regular, user.Name, "disconnected"))
 }
 
 func (s *Supervisor) CurrentUsers() string {
@@ -232,7 +240,7 @@ func (s *Supervisor) StartGame(userStarted *User) error {
 	//TODO:
 	//rand.Shuffle(len(s.Users), func(i, j int) { s.Users[i], s.Users[j] = s.Users[j], s.Users[i] })
 
-	s.SendGameControlMessage("Randomizing play order")
+	s.SendGameControlMessage("Randomizing play order\n")
 	time.Sleep(time.Millisecond * 100)
 
 	for i, user := range s.Users {
@@ -254,12 +262,71 @@ func (s *Supervisor) StartGame(userStarted *User) error {
 	return nil
 }
 
-func (s *Supervisor) ServeWS() func(connection *websocket.Conn) {
-	return func(connection *websocket.Conn) {
-		user := NewUser(connection.Request().Header.Get("Username"), connection, s)
-		s.Join(user)
+func (s *Supervisor) UserExists(userName string) bool {
+	for _, user := range s.Users {
+		if strings.ToLower(user.Name) == strings.ToLower(userName) {
+			return true
+		}
+	}
 
+	return false
+}
+
+func (s *Supervisor) IsUp() func(connection *websocket.Conn) {
+	return func(connection *websocket.Conn) {
+		//userName := connection.Request().Header.Get("Username")
+		//exist := s.UserExists(userName)
+		//fmt.Printf("User %s exists: %v\n", userName, exist)
+		//user := NewUser(userName, connection, s)
+		//fmt.Printf("User %s connected\n", userName)
+		//s.Join(user)
+		//
+		//user.Read()
+
+	}
+}
+
+func (s *Supervisor) JoinWS() func(connection *websocket.Conn) {
+	return func(connection *websocket.Conn) {
+		userName := connection.Request().Header.Get("Username")
+		//exist := s.UserExists(userName)
+		//fmt.Printf("User %s exists: %v\n", userName, exist)
+		user := NewUser(userName, connection, s)
+		//fmt.Printf("User %s connected\n", userName)
+		s.Join(user)
+		//
 		user.Read()
+
+	}
+}
+
+func (s *Supervisor) UserNameTakenHandshake() func(config *websocket.Config, req *http.Request) error {
+	return func(config *websocket.Config, req *http.Request) error {
+		userName := req.Header.Get("Username")
+		exist := s.UserExists(userName)
+		fmt.Println(exist)
+		if exist {
+
+			return fmt.Errorf("username exists")
+		}
+
+		return nil
+	}
+}
+
+func (s *Supervisor) UserNameTaken() func(connection *websocket.Conn) {
+	return func(connection *websocket.Conn) {
+		//userName := connection.Request().Header.Get("Username")
+		//exist := s.UserExists(userName)
+		//fmt.Println(exist)
+		//connection.PayloadType = byte(3)
+		////connection.Config().Header.Set("usernameexists", strconv.FormatBool(exist))
+		//if exist {
+		//	connection.WriteClose(http.StatusBadRequest)
+		//} else {
+		//	connection.WriteClose(http.StatusOK)
+		//}
+
 	}
 }
 

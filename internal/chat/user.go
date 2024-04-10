@@ -47,7 +47,13 @@ func (u *User) PickCard() *card.Card {
 }
 
 func (u *User) DiscardCardAndPick() *card.Card {
-	c := *u.Supervisor.PickCard()
+	var c card.Card
+	if len(u.Supervisor.Game.Deck.Cards()) == 0 {
+		c = u.Supervisor.Game.Deck.OutCard()
+	} else {
+		c = *u.Supervisor.PickCard()
+	}
+
 	u.Cards.Played = append(u.Cards.Played, *u.Cards.Current)
 	u.Cards.Current = &c
 	u.SendCurrentCard()
@@ -207,8 +213,6 @@ func (u *User) Read() {
 	for {
 		message := &Message{}
 		if err := websocket.JSON.Receive(u.Connection, message); err != nil {
-			// EOF connection closed by the client
-			fmt.Printf("Supervisor quit: %v\n", err)
 			u.Supervisor.Quit(u)
 			break
 		}
@@ -216,10 +220,16 @@ func (u *User) Read() {
 
 		switch message.Type {
 		case StartGame:
+			if len(u.Supervisor.Users) < 3 {
+				u.Write(NewMessage(Regular, "Game control", "Minimum players are 3\n"))
+				return
+			}
 			if !u.Supervisor.Game.Started {
-				u.Supervisor.StartGame(u)
+				_ = u.Supervisor.StartGame(u)
+				return
 			} else {
 				u.Write(NewMessage(Regular, "Game control", "Game already started\n"))
+				return
 			}
 		case NewRound:
 			u.Supervisor.NewRound(message.LatestWinnerOrder)

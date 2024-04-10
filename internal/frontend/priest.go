@@ -18,7 +18,7 @@ func (ui *UI) ShowPriestActionView(_ *gocui.Gui, message chat.Message) error {
 	maxX, maxY := ui.Size()
 	yStart := maxY - int(float64(maxY)*0.84)
 	items := len(message.Opponents)
-	width := maxX - int(float64(maxX)*0.2)
+	width := maxX - int(float64(maxX)*0.3)
 	priestOpponents = nil
 	if priest, err := ui.SetView(PriestWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
 		if !errors.Is(err, gocui.ErrUnknownView) {
@@ -47,7 +47,7 @@ func (ui *UI) ShowPriestResponseActionView(_ *gocui.Gui, message chat.Message) e
 	maxX, maxY := ui.Size()
 	yStart := maxY - int(float64(maxY)*0.84)
 	items := 2
-	width := maxX - int(float64(maxX)*0.2)
+	width := maxX - int(float64(maxX)*0.3)
 
 	//_ = ui.DeleteView(PriestWidget)
 

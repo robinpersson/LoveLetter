@@ -2,6 +2,7 @@ package frontend
 
 import (
 	"fmt"
+	"github.com/common-nighthawk/go-figure"
 	"github.com/jroimartin/gocui"
 	"github.com/robinpersson/LoveLetter/internal/chat"
 	"golang.org/x/net/websocket"
@@ -44,11 +45,46 @@ func NewUI() (*UI, error) {
 	return &UI{Gui: gui, rulesOpen: false}, nil
 }
 
+func NewUI2() (*UI, error) {
+	return &UI{rulesOpen: false}, nil
+}
+
+func (ui *UI) StartLayout(g *gocui.Gui) error {
+	maxX, maxY := g.Size()
+
+	g.Cursor = true
+	if v, err := g.SetView("StartText", 0, 0, maxX-1, maxY-1); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Title = "StartText"
+		v.Autoscroll = false
+		wFig := figure.NewFigure("Love Letter", "avatar", true)
+		_, _ = fmt.Fprint(v, wFig.String())
+	}
+
+	height := maxY - int(float64(maxY)*0.90) // 10% height
+	if v, err := g.SetView("StartInput", 0, maxY-height, maxX-1, maxY-1); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Title = "StartInput"
+		v.Autoscroll = false
+		v.SetCursor(0, 0)
+		v.Wrap = true
+		v.Editable = true
+	}
+	g.SetCurrentView("StartInput")
+
+	return nil
+
+}
+
 func (ui *UI) Layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 	//fmt.Println(maxX, maxY)
-	height := maxY - int(float64(maxY)*0.95) // 5% height
-	width := maxX - int(float64(maxX)*0.2)   // 80% width
+	height := maxY - int(float64(maxY)*0.90) // 5% height
+	width := maxX - int(float64(maxX)*0.3)   // 80% width
 	//t20 := int(float64(maxX) * 0.8)
 	g.Cursor = true
 
@@ -62,10 +98,10 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 		_, _ = fmt.Fprint(controls, "- start new game: Ctrl+S\n- toggle rules: Ctrl+R")
 	}
 
-	height = maxY - int(float64(maxY)*0.3)
-	width = maxX - int(float64(maxX)*0.2)
+	height = maxY - int(float64(maxY)*0.4)
+	width = maxX - int(float64(maxX)*0.3)
 	//fmt.Println(height, width)
-	if messages, err := g.SetView(MessageWidget, 0, 4, width, height); err != nil {
+	if messages, err := g.SetView(MessageWidget, 0, 5, width, height); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -74,18 +110,8 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 		messages.Wrap = true
 	}
 
-	//if action, err := g.SetView(ActionsWidget, 0, maxY-12, maxX-20, maxY-1); err != nil {
-	//	if err != gocui.ErrUnknownView {
-	//		return err
-	//	}
-	//	action.Title = ActionsWidget
-	//	action.Autoscroll = false
-	//	action.Wrap = true
-	//	action.Editable = false
-	//}
-
 	height = maxY - int(float64(maxY)*0.90) // 10% height
-	width = maxX - int(float64(maxX)*0.2)   // 80% width
+	width = maxX - int(float64(maxX)*0.3)   // 80% width
 	if input, err := g.SetView(InputWidget, 0, maxY-height, width, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -96,8 +122,8 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 		input.Editable = true
 	}
 
-	height = maxY - int(float64(maxY)*0.3) // 70% height
-	width = maxX - int(float64(maxX)*0.83) // 80% width
+	height = maxY - int(float64(maxY)*0.4) // 70% height
+	width = maxX - int(float64(maxX)*0.73) // 80% width
 
 	if users, err := g.SetView(UsersWidget, maxX-width, 0, maxX-1, height); err != nil {
 		if err != gocui.ErrUnknownView {
@@ -109,9 +135,9 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 		users.Wrap = true
 	}
 
-	height = maxY - int(float64(maxY)*0.75)   // 70% height
+	height = maxY - int(float64(maxY)*0.68)   // 70% height
 	height2 := maxY - int(float64(maxY)*0.86) // 70% height
-	width = maxX - int(float64(maxX)*0.83)    // 80% width
+	width = maxX - int(float64(maxX)*0.73)    // 80% width
 	if users, err := g.SetView(DeckWidget, maxX-width, maxY-height, maxX-1, maxY-height2); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -122,7 +148,7 @@ func (ui *UI) Layout(g *gocui.Gui) error {
 	}
 
 	height = maxY - int(float64(maxY)*0.90) // 10% height
-	width = maxX - int(float64(maxX)*0.83)
+	width = maxX - int(float64(maxX)*0.73)
 	if cards, err := g.SetView(CardsWidget, maxX-width, maxY-height, maxX-1, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -181,13 +207,33 @@ func (ui *UI) SetConnection(connection *websocket.Conn) {
 	ui.connection = connection
 }
 
-func (ui *UI) Connect(username string) error {
-	config, err := websocket.NewConfig(WebsocketEndpoint, WebsocketOrigin)
+func (ui *UI) Connect(username, address string) error {
+	//config, err := websocket.NewConfig(WebsocketEndpoint, WebsocketOrigin)
+	config, err := websocket.NewConfig(fmt.Sprintf("ws://%s:3000/join", address), WebsocketOrigin)
 	if err != nil {
 		return err
 	}
 
 	config.Header.Set("Username", username)
+
+	connection, err := websocket.DialConfig(config)
+	if err != nil {
+		return err
+	}
+
+	ui.SetConnection(connection)
+
+	return nil
+}
+
+func (ui *UI) Connect2(address string) error {
+	//config, err := websocket.NewConfig(WebsocketEndpoint, WebsocketOrigin)
+	config, err := websocket.NewConfig(fmt.Sprintf("ws://%s:3000/connect", address), WebsocketOrigin)
+	if err != nil {
+		return err
+	}
+
+	//config.Header.Set("Username", username)
 
 	connection, err := websocket.DialConfig(config)
 	if err != nil {
@@ -285,6 +331,8 @@ func (ui *UI) ReadMessage() error {
 				return ui.ShowGameFinishedView(g, message)
 			case chat.Clear:
 				return ui.Clear()
+			case chat.GameControl:
+				return ui.GameControl(message.IsAdmin)
 			}
 
 			return nil

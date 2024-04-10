@@ -16,7 +16,7 @@ func (ui *UI) ShowKingActionView(_ *gocui.Gui, message chat.Message) error {
 	maxX, maxY := ui.Size()
 	yStart := maxY - int(float64(maxY)*0.84)
 	items := len(message.Opponents)
-	width := maxX - int(float64(maxX)*0.2)
+	width := maxX - int(float64(maxX)*0.3)
 
 	if king, err := ui.SetView(KingWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
 		if !errors.Is(err, gocui.ErrUnknownView) {

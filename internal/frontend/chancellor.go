@@ -20,7 +20,7 @@ func (ui *UI) ShowChancellorActionView(_ *gocui.Gui, message chat.Message) error
 	maxX, maxY := ui.Size()
 	yStart := maxY - int(float64(maxY)*0.84)
 	items := len(message.ChancellorCards)
-	width := maxX - int(float64(maxX)*0.2)
+	width := maxX - int(float64(maxX)*0.3)
 
 	currentCards = nil
 
@@ -53,7 +53,7 @@ func (ui *UI) ShowChancellorActionOrderView() error {
 	maxX, maxY := ui.Size()
 	yStart := maxY - int(float64(maxY)*0.84)
 	items := len(currentCards)
-	width := maxX - int(float64(maxX)*0.2)
+	width := maxX - int(float64(maxX)*0.3)
 
 	if chancellor, err := ui.SetView(ChancellorWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
 		if err != gocui.ErrUnknownView {

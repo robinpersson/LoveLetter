@@ -36,6 +36,7 @@ const (
 	NextPlayer
 	RoundFinished
 	GameFinished
+	GameControl
 )
 
 type CardInfo struct {
@@ -78,14 +79,15 @@ type Message struct {
 	OpponentPlayer    UserInfo    `json:"opponentPlayer"`
 	ChancellorCards   []CardInfo  `json:"chancellorCards"`
 	RoundOver         RoundOver   `json:"roundOver"`
-	LatestWinnerOrder int         `json:"latesWinnerOrder"`
+	LatestWinnerOrder int         `json:"latestWinnerOrder"`
+	IsAdmin           bool        `json:"isAdmin"`
 }
 
 func NewMessage(msgType MessageType, from string, text string) *Message {
 	return &Message{
 		Type:      msgType,
 		From:      from,
-		Text:      text + "\n",
+		Text:      text,
 		Timestamp: time.Now().Format(time.TimeOnly),
 	}
 }
