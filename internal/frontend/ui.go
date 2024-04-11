@@ -209,31 +209,12 @@ func (ui *UI) SetConnection(connection *websocket.Conn) {
 
 func (ui *UI) Connect(username, address string) error {
 	//config, err := websocket.NewConfig(WebsocketEndpoint, WebsocketOrigin)
-	config, err := websocket.NewConfig(fmt.Sprintf("ws://%s:3000/join", address), WebsocketOrigin)
+	config, err := websocket.NewConfig(fmt.Sprintf("ws://%s:3000", address), WebsocketOrigin)
 	if err != nil {
 		return err
 	}
 
 	config.Header.Set("Username", username)
-
-	connection, err := websocket.DialConfig(config)
-	if err != nil {
-		return err
-	}
-
-	ui.SetConnection(connection)
-
-	return nil
-}
-
-func (ui *UI) Connect2(address string) error {
-	//config, err := websocket.NewConfig(WebsocketEndpoint, WebsocketOrigin)
-	config, err := websocket.NewConfig(fmt.Sprintf("ws://%s:3000/connect", address), WebsocketOrigin)
-	if err != nil {
-		return err
-	}
-
-	//config.Header.Set("Username", username)
 
 	connection, err := websocket.DialConfig(config)
 	if err != nil {

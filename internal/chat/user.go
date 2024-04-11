@@ -220,10 +220,10 @@ func (u *User) Read() {
 
 		switch message.Type {
 		case StartGame:
-			if len(u.Supervisor.Users) < 3 {
-				u.Write(NewMessage(Regular, "Game control", "Minimum players are 3\n"))
-				return
-			}
+			//if len(u.Supervisor.Users) < 3 {
+			//	u.Write(NewMessage(Regular, "Game control", "Minimum players are 3\n"))
+			//	return
+			//}
 			if !u.Supervisor.Game.Started {
 				_ = u.Supervisor.StartGame(u)
 				return
@@ -411,7 +411,7 @@ func (u *User) PlayCard(cc card.Card) {
 	time.Sleep(time.Millisecond * 100)
 
 	waitForPlay := u.PrintCardActions(cc)
-
+	fmt.Println(waitForPlay)
 	if !waitForPlay {
 		u.IsInTurn = false
 		u.Supervisor.NextPlayer(u.Order)

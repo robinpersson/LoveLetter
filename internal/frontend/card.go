@@ -74,7 +74,9 @@ func (ui *UI) PlayPickedCard(g *gocui.Gui, v *gocui.View) error {
 func (ui *UI) PlayCurrentCard(g *gocui.Gui, v *gocui.View) error {
 	message := chat.NewMessage(chat.PlayCurrentCard, ui.username, "Play current card")
 
+	fmt.Println(ui.connection.IsClientConn())
 	if err := websocket.JSON.Send(ui.connection, message); err != nil {
+
 		return fmt.Errorf("UI.WriteMessage: %w", err)
 	}
 

@@ -47,9 +47,9 @@ func (d *deck) InsertCards(cardsToInsert []Card) {
 
 func NewDeck() Deck {
 	d := deck{}
-	d.fakeInit()
-	//d.init()
-	//d.Shuffle()
+	//d.fakeInit()
+	d.init()
+	d.Shuffle()
 	return &d
 }
 

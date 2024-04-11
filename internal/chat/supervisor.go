@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/robinpersson/LoveLetter/internal/card"
 	"github.com/robinpersson/LoveLetter/internal/game"
+	"math/rand/v2"
 	"net/http"
 	"sort"
 	"strings"
@@ -234,11 +235,11 @@ func (s *Supervisor) StartGame(userStarted *User) error {
 	s.Game.StartNewGame(len(s.Users))
 	s.Game.Round = 1
 
-	s.Broadcast(NewMessage(Regular, userStarted.Name, "started the game"))
+	s.Broadcast(NewMessage(Regular, userStarted.Name, "started the game\n"))
 	time.Sleep(time.Millisecond * 100)
 
 	//TODO:
-	//rand.Shuffle(len(s.Users), func(i, j int) { s.Users[i], s.Users[j] = s.Users[j], s.Users[i] })
+	rand.Shuffle(len(s.Users), func(i, j int) { s.Users[i], s.Users[j] = s.Users[j], s.Users[i] })
 
 	s.SendGameControlMessage("Randomizing play order\n")
 	time.Sleep(time.Millisecond * 100)
