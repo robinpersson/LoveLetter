@@ -114,7 +114,6 @@ func PlayIntro() error {
 
 	f, err := embedFS.Open("resources/intro.mp3")
 	if err != nil {
-		fmt.Print(err)
 		return err
 	}
 	defer f.Close()

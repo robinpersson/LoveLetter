@@ -10,24 +10,30 @@ import (
 )
 
 type Deck interface {
-	Shuffle()
+	Shuffle(nrOfPlayers int)
 	Cards() []Card
-	OutCard() Card
+	FaceDownCard() Card
+	FaceUpCards() []Card
 	PickCard() *Card
 	InsertCards(cardsToInsert []Card)
 }
 
 type deck struct {
-	cards   []Card
-	outCard Card
+	cards        []Card
+	faceDownCard Card
+	faceUpCards  []Card
 }
 
 func (d *deck) Cards() []Card {
 	return d.cards
 }
 
-func (d *deck) OutCard() Card {
-	return d.outCard
+func (d *deck) FaceDownCard() Card {
+	return d.faceDownCard
+}
+
+func (d *deck) FaceUpCards() []Card {
+	return d.faceUpCards
 }
 
 func (d *deck) PickCard() *Card {
@@ -45,18 +51,23 @@ func (d *deck) InsertCards(cardsToInsert []Card) {
 	d.cards = append(d.cards, cardsToInsert...)
 }
 
-func NewDeck() Deck {
+func NewDeck(nrOfPlayers int) Deck {
 	d := deck{}
 	//d.fakeInit()
 	d.init()
-	d.Shuffle()
+	d.Shuffle(nrOfPlayers)
 	return &d
 }
 
-func (d *deck) Shuffle() {
+func (d *deck) Shuffle(nrOfPlayers int) {
 	rand.NewSource(time.Now().UnixNano())
 	rand.Shuffle(len(d.cards), func(i, j int) { d.cards[i], d.cards[j] = d.cards[j], d.cards[i] })
-	d.outCard = d.cards[0]
+	d.faceDownCard = d.cards[0]
+
+	if nrOfPlayers == 2 {
+		d.faceUpCards = d.cards[3:]
+	}
+
 	d.cards = d.cards[1:]
 }
 
@@ -70,7 +81,7 @@ func (d *deck) fakeInit() {
 	//cards = append(cards, NewCountess())
 	//cards = append(cards, NewCountess())
 	cards = append(cards, NewBaron())
-	d.outCard = NewPrince()
+	d.faceDownCard = NewPrince()
 	//cards = append(cards, NewHandmaid())
 	cards = append(cards, NewGuard())
 	cards = append(cards, NewPrince())

@@ -247,6 +247,7 @@ func (ui *UI) ReadMessage() error {
 		}
 
 		ui.Update(func(g *gocui.Gui) error {
+
 			switch message.Type {
 			case chat.Regular, chat.StartGame:
 				view, err := ui.View(MessageWidget)

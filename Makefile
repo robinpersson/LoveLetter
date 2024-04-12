@@ -1,2 +1,2 @@
 build-client:
-	go build -o ./dist/LoveLetter ./cmd/client
+	go build -o ./dist/LoveLetter ./cmd/loveletter

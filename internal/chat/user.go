@@ -49,7 +49,7 @@ func (u *User) PickCard() *card.Card {
 func (u *User) DiscardCardAndPick() *card.Card {
 	var c card.Card
 	if len(u.Supervisor.Game.Deck.Cards()) == 0 {
-		c = u.Supervisor.Game.Deck.OutCard()
+		c = u.Supervisor.Game.Deck.FaceDownCard()
 	} else {
 		c = *u.Supervisor.PickCard()
 	}
@@ -122,9 +122,12 @@ func (u *User) SendPickedCard() {
 		},
 	}
 
-	u.Supervisor.Broadcast(NewMessage(Regular, u.Name, "picked a card"))
+	u.Supervisor.Broadcast(NewMessage(Regular, u.Name, "picked a card\n"))
+	time.Sleep(time.Millisecond * 200)
 	u.Write(mess)
+	time.Sleep(time.Millisecond * 200)
 	u.PrintPlayActions()
+
 }
 
 func (u *User) IsForcedToPlayCountess(currentCard *card.Card, pickedCard *card.Card) (bool, bool) {
@@ -220,16 +223,15 @@ func (u *User) Read() {
 
 		switch message.Type {
 		case StartGame:
+			//TODO: remove comments
 			//if len(u.Supervisor.Users) < 3 {
 			//	u.Write(NewMessage(Regular, "Game control", "Minimum players are 3\n"))
 			//	return
 			//}
 			if !u.Supervisor.Game.Started {
 				_ = u.Supervisor.StartGame(u)
-				return
 			} else {
 				u.Write(NewMessage(Regular, "Game control", "Game already started\n"))
-				return
 			}
 		case NewRound:
 			u.Supervisor.NewRound(message.LatestWinnerOrder)
@@ -399,6 +401,9 @@ func (u *User) PlayCard(cc card.Card) {
 	u.Cards.Played = append(u.Cards.Played, cc)
 	u.IsProtected = cc.Name() == "Handmaid"
 
+	u.broadcastPickedCard(cc)
+	time.Sleep(time.Millisecond * 100)
+
 	if cc.Name() == "Princess" {
 		u.Supervisor.EliminatePlayer(u)
 	}
@@ -407,11 +412,7 @@ func (u *User) PlayCard(cc card.Card) {
 
 	u.SendCurrentCard()
 
-	u.broadcastPickedCard(cc)
-	time.Sleep(time.Millisecond * 100)
-
 	waitForPlay := u.PrintCardActions(cc)
-	fmt.Println(waitForPlay)
 	if !waitForPlay {
 		u.IsInTurn = false
 		u.Supervisor.NextPlayer(u.Order)
@@ -428,7 +429,7 @@ func (u *User) TradeCards(playerOrder int) {
 
 	u.SendCurrentCard()
 
-	u.Supervisor.BroadcastText(fmt.Sprintf(" traded card with %s", opponent.Name), u.Name)
+	u.Supervisor.BroadcastText(fmt.Sprintf("traded card with %s", opponent.Name), u.Name)
 	time.Sleep(time.Millisecond * 200)
 
 	u.IsInTurn = false

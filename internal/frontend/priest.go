@@ -78,7 +78,7 @@ func (ui *UI) ViewCard(playerNumber int) error {
 	maxX, maxY := ui.Size()
 	yStart := maxY - int(float64(maxY)*0.84)
 	items := 2
-	width := maxX - int(float64(maxX)*0.2)
+	width := maxX - int(float64(maxX)*0.3)
 
 	ui.clearGuessCardBindings()
 
@@ -99,7 +99,6 @@ func (ui *UI) ViewCard(playerNumber int) error {
 
 		card := ""
 		playerName := ""
-		fmt.Println(priestOpponents)
 		for _, u := range priestOpponents {
 			if u.Order == playerNumber {
 				playerName = u.Name

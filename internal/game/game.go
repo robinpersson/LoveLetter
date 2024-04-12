@@ -32,7 +32,7 @@ func NewGame() *Game {
 }
 
 func (g *Game) StartNewGame(nrOfUsers int) {
-	deck := card.NewDeck()
+	deck := card.NewDeck(nrOfUsers)
 	//deck.Shuffle()
 	g.Deck = deck
 	g.Started = true

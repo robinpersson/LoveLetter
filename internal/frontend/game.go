@@ -92,7 +92,7 @@ func (ui *UI) startCountDown(winnerOrder int, winnerName string) {
 
 	ticker := time.NewTicker(1 * time.Second)
 	quit := make(chan struct{})
-	countdown := 4
+	countdown := 15
 	go func() {
 		for {
 			select {

@@ -64,8 +64,21 @@ func (s *Supervisor) SendGameControlMessage(text string) {
 
 func (s *Supervisor) BroadcastDeckCount() {
 	if s.Game != nil && s.Game.Deck != nil {
-		mess := NewMessage(Deck, "Game control", fmt.Sprintf("favor tokens: %d\nround: %d\ndeck: %d cards left", s.Game.FavorTokens, s.Game.Round, len(s.Game.Deck.Cards())))
-		//mess.SetTime(time.Now())
+		mess := &Message{}
+		if len(s.Game.Deck.FaceUpCards()) > 0 {
+			mess = NewMessage(Deck, "Game control", fmt.Sprintf("face up cards:%s %s %s\nfavor tokens: %d\nround: %d\ndeck: %d cards left",
+				s.Game.Deck.FaceUpCards()[0].ShortString(),
+				s.Game.Deck.FaceUpCards()[1].ShortString(),
+				s.Game.Deck.FaceUpCards()[2].ShortString(),
+				s.Game.FavorTokens,
+				s.Game.Round,
+				len(s.Game.Deck.Cards())))
+		} else {
+			mess = NewMessage(Deck, "Game control", fmt.Sprintf("favor tokens: %d\nround: %d\ndeck: %d cards left",
+				s.Game.FavorTokens,
+				s.Game.Round,
+				len(s.Game.Deck.Cards())))
+		}
 		s.Broadcast(mess)
 	}
 }
@@ -210,9 +223,10 @@ func (s *Supervisor) NewRound(winnerOrder int) error {
 		user.IsProtected = false
 		user.Cards = &Cards{}
 		user.IsInTurn = false
+		user.Write(&Message{Type: GameControl, IsAdmin: user.Admin})
 	}
 
-	s.Broadcast(NewMessage(Regular, latestWinner.Name, "started new round"))
+	s.Broadcast(NewMessage(Regular, latestWinner.Name, "started new round\n"))
 	time.Sleep(time.Millisecond * 100)
 
 	s.SendPlayOrder()
@@ -305,9 +319,7 @@ func (s *Supervisor) UserNameTakenHandshake() func(config *websocket.Config, req
 	return func(config *websocket.Config, req *http.Request) error {
 		userName := req.Header.Get("Username")
 		exist := s.UserExists(userName)
-		fmt.Println(exist)
 		if exist {
-
 			return fmt.Errorf("username exists")
 		}
 
@@ -333,23 +345,18 @@ func (s *Supervisor) UserNameTaken() func(connection *websocket.Conn) {
 
 func (s *Supervisor) NextPlayer(order int) {
 	gameOver := s.IsGameOver()
-	fmt.Println("GAME OVER:", gameOver)
 	if gameOver {
 		return
 	}
 
 	if order == len(s.Users) && !s.Users[0].Eliminated {
-		fmt.Println("GOT HERE")
 		s.Users[0].PickCard()
 		return
 	}
-	fmt.Println("NOP GOT HERE")
 	s.GetPlayer(order + 1)
 }
 
 func (s *Supervisor) GetPlayer(order int) {
-	fmt.Println("order: ", order)
-
 	for {
 
 		if order > len(s.Users) {
@@ -395,7 +402,7 @@ func (s *Supervisor) GetPlayerByOrder(order int) *User {
 func (s *Supervisor) EliminatePlayer(player *User) {
 	player.Eliminated = true
 	s.SendPlayOrder()
-	s.SendGameControlMessage(fmt.Sprintf("%s is eliminated", player.Name))
+	s.SendGameControlMessage(fmt.Sprintf("%s is eliminated\n", player.Name))
 	time.Sleep(time.Millisecond * 200)
 }
 
@@ -430,9 +437,9 @@ func (s *Supervisor) IsGameOver() bool {
 			//	Index:       0,
 			//},
 			OutCard: CardInfo{
-				Value:       s.Game.Deck.OutCard().Value(),
-				Name:        s.Game.Deck.OutCard().Name(),
-				Description: s.Game.Deck.OutCard().ToString(),
+				Value:       s.Game.Deck.FaceDownCard().Value(),
+				Name:        s.Game.Deck.FaceDownCard().Name(),
+				Description: s.Game.Deck.FaceDownCard().ToString(),
 				Index:       0,
 			},
 		}
@@ -447,7 +454,7 @@ func (s *Supervisor) IsGameOver() bool {
 			})
 		} else {
 			s.BroadcastText("Round over... wait for summary", "Game control")
-			time.Sleep(time.Millisecond * 20000)
+			time.Sleep(time.Millisecond * 5000)
 			s.Broadcast(&Message{
 				Type:      RoundFinished,
 				From:      "Game control",
@@ -507,9 +514,9 @@ func (s *Supervisor) IsGameOver() bool {
 				Index:       0,
 			},
 			OutCard: CardInfo{
-				Value:       s.Game.Deck.OutCard().Value(),
-				Name:        s.Game.Deck.OutCard().Name(),
-				Description: s.Game.Deck.OutCard().ToString(),
+				Value:       s.Game.Deck.FaceDownCard().Value(),
+				Name:        s.Game.Deck.FaceDownCard().Name(),
+				Description: s.Game.Deck.FaceDownCard().ToString(),
 				Index:       0,
 			},
 		}

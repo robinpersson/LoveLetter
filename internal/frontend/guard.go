@@ -55,7 +55,6 @@ func getOpponentNameByOrder(order int) string {
 }
 
 func (ui *UI) GuessPlayer(playerNumber, card int) error {
-
 	message := chat.Message{
 		Type: chat.GuardGuess,
 		From: ui.username,
@@ -76,15 +75,28 @@ func (ui *UI) GuessPlayer(playerNumber, card int) error {
 }
 
 func (ui *UI) clearGuessCardBindings() {
-	_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
-	_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone)
-	_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF3, gocui.ModNone)
-	_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF4, gocui.ModNone)
-	_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF5, gocui.ModNone)
-	_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF6, gocui.ModNone)
-	_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF7, gocui.ModNone)
-	_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF8, gocui.ModNone)
-	_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF9, gocui.ModNone)
+	//fmt.Println("clear")
+	ui.DeleteKeybindings(InputWidget)
+	ui.SetKeyBindings(ui.Gui)
+	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
+	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone)
+	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF3, gocui.ModNone)
+	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF4, gocui.ModNone)
+	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF5, gocui.ModNone)
+	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF6, gocui.ModNone)
+	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF7, gocui.ModNone)
+	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF8, gocui.ModNone)
+	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF9, gocui.ModNone)
+	//
+	//_ = ui.DeleteKeybinding("", gocui.KeyF1, gocui.ModNone)
+	//_ = ui.DeleteKeybinding("", gocui.KeyF2, gocui.ModNone)
+	//_ = ui.DeleteKeybinding("", gocui.KeyF3, gocui.ModNone)
+	//_ = ui.DeleteKeybinding("", gocui.KeyF4, gocui.ModNone)
+	//_ = ui.DeleteKeybinding("", gocui.KeyF5, gocui.ModNone)
+	//_ = ui.DeleteKeybinding("", gocui.KeyF6, gocui.ModNone)
+	//_ = ui.DeleteKeybinding("", gocui.KeyF7, gocui.ModNone)
+	//_ = ui.DeleteKeybinding("", gocui.KeyF8, gocui.ModNone)
+	//_ = ui.DeleteKeybinding("", gocui.KeyF9, gocui.ModNone)
 }
 
 func (ui *UI) GuessCard(playerNumber int) {
@@ -126,7 +138,6 @@ func (ui *UI) GuessCard(playerNumber int) {
 		return ui.GuessPlayer(playerNumber, 9)
 	})
 
-	//ui.clearGuessCardBindings()
 }
 
 func (ui *UI) Guard_PickPlayer1(g *gocui.Gui, _ *gocui.View) error {
