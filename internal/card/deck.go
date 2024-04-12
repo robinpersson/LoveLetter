@@ -69,22 +69,29 @@ func (d *deck) Shuffle(nrOfPlayers int) {
 	}
 
 	d.cards = d.cards[1:]
+
+	for i, c := range d.cards {
+		c.SetIndex(i)
+	}
 }
 
 func (d *deck) fakeInit() {
 	var cards []Card
 
-	cards = append(cards, NewPriest())
+	cards = append(cards, NewChancellor())
+
 	cards = append(cards, NewGuard())
-	cards = append(cards, NewPriest())
+	cards = append(cards, NewPrince())
 	//cards = append(cards, NewPrincess())
 	//cards = append(cards, NewCountess())
 	//cards = append(cards, NewCountess())
-	cards = append(cards, NewBaron())
-	d.faceDownCard = NewPrince()
+	cards = append(cards, NewChancellor())
+	d.faceDownCard = NewChancellor()
+	cards = append(cards, NewKing())
 	//cards = append(cards, NewHandmaid())
-	cards = append(cards, NewGuard())
-	cards = append(cards, NewPrince())
+	cards = append(cards, NewPriest())
+	cards = append(cards, NewSpy())
+	cards = append(cards, NewCountess())
 	//cards = append(cards, NewPrincess())
 	//cards = append(cards, NewSpy())
 
@@ -93,6 +100,10 @@ func (d *deck) fakeInit() {
 	//	cards = append(cards, NewPrince())
 	//}
 	d.cards = cards
+
+	for i, _ := range d.cards {
+		d.cards[i].SetIndex(i)
+	}
 	return
 
 	for i := 0; i < baronCount-1; i++ {

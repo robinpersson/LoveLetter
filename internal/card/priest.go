@@ -16,6 +16,14 @@ type priest struct {
 	CardSettings
 }
 
+func (c priest) SetIndex(index int) {
+	c.index = index
+}
+
+func (c priest) Index() int {
+	return c.index
+}
+
 func (c priest) ToString() string {
 	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }

@@ -16,6 +16,14 @@ type handmaid struct {
 	CardSettings
 }
 
+func (c handmaid) SetIndex(index int) {
+	c.index = index
+}
+
+func (c handmaid) Index() int {
+	return c.index
+}
+
 func (c handmaid) ToString() string {
 	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }

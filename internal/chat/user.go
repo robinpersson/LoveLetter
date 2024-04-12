@@ -291,6 +291,11 @@ func (u *User) InsertChancellorCards(message *Message) {
 
 	u.Supervisor.InsertCards(cardsToInsert)
 
+	for _, c := range u.Supervisor.Game.Deck.Cards() {
+		fmt.Printf("%d %s\n", c.Index(), c.ToString())
+	}
+	fmt.Println("------------")
+
 	u.Supervisor.BroadcastText(fmt.Sprintf("inserted %d cards in the bottom of the deck", len(cardsToInsert)), u.Name)
 	time.Sleep(time.Millisecond * 200)
 
@@ -320,7 +325,7 @@ func (u *User) CompareHands(opponentOrder int) {
 	opponent := u.Supervisor.GetPlayerByOrder(opponentOrder)
 	opponentCard := *opponent.Cards.Current
 	userCard := *u.Cards.Current
-	
+
 	if opponentCard.Value() > userCard.Value() {
 		//Opponent win
 		u.Supervisor.BroadcastText(fmt.Sprintf("compared card with %s, %s won", opponent.Name, opponent.Name), u.Name)

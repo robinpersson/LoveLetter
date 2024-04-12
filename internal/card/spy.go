@@ -16,6 +16,14 @@ type spy struct {
 	CardSettings
 }
 
+func (c spy) SetIndex(index int) {
+	c.index = index
+}
+
+func (c spy) Index() int {
+	return c.index
+}
+
 func (c spy) ToString() string {
 	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }

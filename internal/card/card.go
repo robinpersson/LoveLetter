@@ -15,6 +15,8 @@ const (
 
 type Card interface {
 	Name() string
+	SetIndex(index int)
+	Index() int
 	Value() int
 	ToString() string
 	ShortString() string
@@ -25,6 +27,7 @@ type CardSettings struct {
 	description string
 	value       int
 	name        string
+	index       int
 }
 
 func GetCardByValue(value int) Card {

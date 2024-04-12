@@ -16,6 +16,14 @@ type prince struct {
 	CardSettings
 }
 
+func (c prince) SetIndex(index int) {
+	c.index = index
+}
+
+func (c prince) Index() int {
+	return c.index
+}
+
 func (c prince) ToString() string {
 	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }

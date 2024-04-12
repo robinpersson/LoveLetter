@@ -18,6 +18,14 @@ type guard struct {
 	CardSettings
 }
 
+func (c guard) SetIndex(index int) {
+	c.index = index
+}
+
+func (c guard) Index() int {
+	return c.index
+}
+
 func (c guard) ToString() string {
 	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }

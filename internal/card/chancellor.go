@@ -16,6 +16,14 @@ type chancellor struct {
 	CardSettings
 }
 
+func (c chancellor) SetIndex(index int) {
+	c.index = index
+}
+
+func (c chancellor) Index() int {
+	return c.index
+}
+
 func (c chancellor) ToString() string {
 	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }

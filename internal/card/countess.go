@@ -16,6 +16,14 @@ type countess struct {
 	CardSettings
 }
 
+func (c countess) SetIndex(index int) {
+	c.index = index
+}
+
+func (c countess) Index() int {
+	return c.index
+}
+
 func (c countess) ToString() string {
 	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }

@@ -16,6 +16,14 @@ type baron struct {
 	CardSettings
 }
 
+func (c baron) SetIndex(index int) {
+	c.index = index
+}
+
+func (c baron) Index() int {
+	return c.index
+}
+
 func (c baron) ToString() string {
 	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }

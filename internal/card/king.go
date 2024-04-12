@@ -16,6 +16,14 @@ type king struct {
 	CardSettings
 }
 
+func (c king) SetIndex(index int) {
+	c.index = index
+}
+
+func (c king) Index() int {
+	return c.index
+}
+
 func (c king) ToString() string {
 	return fmt.Sprintf("[%d]%s", c.value, c.name)
 }
