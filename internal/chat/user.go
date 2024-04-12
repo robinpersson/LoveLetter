@@ -276,6 +276,7 @@ func (u *User) getChancellorCardByValue(value int) *card.Card {
 }
 
 func (u *User) InsertChancellorCards(message *Message) {
+	//TODO: is order of inserted cards correct?
 	u.Cards.Current = u.getChancellorCardByValue(message.CurrentCard.Value)
 	u.ChancellorCardInfos = nil
 
@@ -319,10 +320,7 @@ func (u *User) CompareHands(opponentOrder int) {
 	opponent := u.Supervisor.GetPlayerByOrder(opponentOrder)
 	opponentCard := *opponent.Cards.Current
 	userCard := *u.Cards.Current
-
-	//fmt.Println("Opponent card:", opponentCard.ToString())
-	//fmt.Println("Users card:", userCard.ToString())
-
+	
 	if opponentCard.Value() > userCard.Value() {
 		//Opponent win
 		u.Supervisor.BroadcastText(fmt.Sprintf("compared card with %s, %s won", opponent.Name, opponent.Name), u.Name)

@@ -50,6 +50,7 @@ type UserInfo struct {
 	Name     string
 	Number   int
 	Order    int
+	Tokens   int
 	CardInfo CardInfo
 }
 
@@ -64,6 +65,7 @@ type RoundOver struct {
 	WinnerCard  CardInfo
 	OutCard     CardInfo
 	GameWinners []UserInfo
+	Users       []UserInfo
 }
 
 type Message struct {

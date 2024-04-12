@@ -86,14 +86,14 @@ func (ui *UI) PlayCurrentCard(g *gocui.Gui, v *gocui.View) error {
 }
 
 func getCards() string {
-	return "F1. Spy\nF2. Priest\nF3. Baron\nF4. Handmaid\nF5. Prince\nF6. Chancellor\nF7. King\nF8. Countess\nF9. Princess"
+	return "F1. Spy\nF2. Priest\nF3. Baron\nF4. Handmaid\nF5. Prince\nF6. Chancellor\nF7. King\nF8. Countess\nF9. Princess\nF10. <-Back"
 }
 
 func (ui *UI) printGuessCards(g *gocui.Gui, opponentName string) {
 	maxX, maxY := ui.Size()
 
 	yStart := maxY - int(float64(maxY)*0.84)
-	items := 9
+	items := 10
 	//itemRow := int(maxY / items)
 	width := maxX - int(float64(maxX)*0.3)
 

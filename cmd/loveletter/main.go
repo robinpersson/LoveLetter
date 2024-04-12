@@ -51,13 +51,16 @@ func main() {
 			username, _ = reader.ReadString('\n')
 			username = strings.Replace(username, "\n", "", -1)
 
-			taken := isUserNameTaken(address, username)
-
-			if !taken {
-				break
+			if len(username) > 0 {
+				taken := isUserNameTaken(address, username)
+				if !taken {
+					break
+				}
+				fmt.Print("Name already taken\n")
+			} else {
+				fmt.Print("Name cannot be empty\n")
 			}
 
-			fmt.Print("Name already taken\n")
 		}
 
 	}

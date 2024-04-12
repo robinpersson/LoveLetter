@@ -12,13 +12,20 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-var selectedGuesPlayer string
 var opponents []chat.UserInfo
 
 func (ui *UI) ShowGuardActionView(_ *gocui.Gui, message chat.Message) error {
+	opponents = message.Opponents
+	return ui.PrintOpponents()
+
+}
+
+func (ui *UI) PrintOpponents() error {
+	ui.clearGuessCardBindings()
+	_ = ui.DeleteView(GuardWidget)
 	maxX, maxY := ui.Size()
 	yStart := maxY - int(float64(maxY)*0.84)
-	items := len(message.Opponents)
+	items := len(opponents)
 	width := maxX - int(float64(maxX)*0.3)
 
 	if guard, err := ui.SetView(GuardWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
@@ -26,15 +33,15 @@ func (ui *UI) ShowGuardActionView(_ *gocui.Gui, message chat.Message) error {
 			fmt.Println(err)
 			return err
 		}
+
 		guard.Title = "select player to guess on"
 		guard.Highlight = true
 		guard.SelBgColor = gocui.ColorGreen
 		guard.BgColor = gocui.ColorGreen
-		opponents = message.Opponents
-		_, _ = fmt.Fprint(guard, getOpponents(message.Opponents))
+		_, _ = fmt.Fprint(guard, getOpponents(opponents))
 	}
 
-	for _, u := range message.Opponents {
+	for _, u := range opponents {
 		key, pickFunc := ui.guard_getKey(u.Order)
 		if err := ui.SetKeybinding(InputWidget, key, gocui.ModNone, pickFunc); err != nil {
 			return err
@@ -75,28 +82,8 @@ func (ui *UI) GuessPlayer(playerNumber, card int) error {
 }
 
 func (ui *UI) clearGuessCardBindings() {
-	//fmt.Println("clear")
 	ui.DeleteKeybindings(InputWidget)
 	ui.SetKeyBindings(ui.Gui)
-	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF1, gocui.ModNone)
-	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF2, gocui.ModNone)
-	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF3, gocui.ModNone)
-	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF4, gocui.ModNone)
-	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF5, gocui.ModNone)
-	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF6, gocui.ModNone)
-	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF7, gocui.ModNone)
-	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF8, gocui.ModNone)
-	//_ = ui.DeleteKeybinding(InputWidget, gocui.KeyF9, gocui.ModNone)
-	//
-	//_ = ui.DeleteKeybinding("", gocui.KeyF1, gocui.ModNone)
-	//_ = ui.DeleteKeybinding("", gocui.KeyF2, gocui.ModNone)
-	//_ = ui.DeleteKeybinding("", gocui.KeyF3, gocui.ModNone)
-	//_ = ui.DeleteKeybinding("", gocui.KeyF4, gocui.ModNone)
-	//_ = ui.DeleteKeybinding("", gocui.KeyF5, gocui.ModNone)
-	//_ = ui.DeleteKeybinding("", gocui.KeyF6, gocui.ModNone)
-	//_ = ui.DeleteKeybinding("", gocui.KeyF7, gocui.ModNone)
-	//_ = ui.DeleteKeybinding("", gocui.KeyF8, gocui.ModNone)
-	//_ = ui.DeleteKeybinding("", gocui.KeyF9, gocui.ModNone)
 }
 
 func (ui *UI) GuessCard(playerNumber int) {
@@ -136,6 +123,10 @@ func (ui *UI) GuessCard(playerNumber int) {
 	//PRINCESS
 	_ = ui.SetKeybinding(InputWidget, gocui.KeyF9, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
 		return ui.GuessPlayer(playerNumber, 9)
+	})
+	//BACK
+	_ = ui.SetKeybinding(InputWidget, gocui.KeyF10, gocui.ModNone, func(g *gocui.Gui, _ *gocui.View) error {
+		return ui.PrintOpponents()
 	})
 
 }

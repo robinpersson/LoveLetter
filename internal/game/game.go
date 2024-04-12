@@ -3,7 +3,6 @@ package game
 import (
 	"github.com/robinpersson/LoveLetter/internal/card"
 	"math/rand"
-	"time"
 )
 
 //type Game interface {
@@ -33,7 +32,6 @@ func NewGame() *Game {
 
 func (g *Game) StartNewGame(nrOfUsers int) {
 	deck := card.NewDeck(nrOfUsers)
-	//deck.Shuffle()
 	g.Deck = deck
 	g.Started = true
 	g.FavorTokens = getFavorTokens(nrOfUsers)
@@ -55,16 +53,6 @@ func getFavorTokens(nrOfUsers int) int {
 	}
 
 	return 3
-}
-
-//func (g *Game) JoinGame(player *Player, id string) {
-//	g.Players = append(g.Players, player)
-//}
-
-func (g *Game) Start() {
-	rand.NewSource(time.Now().UnixNano())
-	//rand.Shuffle(len(g.Players), func(i, j int) { g.Players[i], g.Players[j] = g.Players[j], g.Players[i] })
-	g.Started = true
 }
 
 func (g *Game) InsertCards(cardsToInsert []card.Card) {

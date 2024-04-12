@@ -55,9 +55,15 @@ func (ui *UI) ShowRoundFinishedView(_ *gocui.Gui, message chat.Message) error {
 		v.Title = ""
 		v.Frame = true
 
-		myFigure := figure.NewFigure("Round Over", "larry3d", true)
+		title := "Round Over"
 
-		winnerText := "\n\nWinner(s) are:\n"
+		if message.Type == chat.GameFinished {
+			title = "Game Over"
+		}
+
+		myFigure := figure.NewFigure(title, "larry3d", true)
+
+		winnerText := "\n\nRound winner(s) are:\n"
 
 		for _, winner := range message.RoundOver.Winners {
 			wFig := figure.NewFigure(winner.Name, "avatar", true)
@@ -77,10 +83,24 @@ func (ui *UI) ShowRoundFinishedView(_ *gocui.Gui, message chat.Message) error {
 
 		winnerText += fmt.Sprintf("face down card was: %s\n\n", message.RoundOver.OutCard.Description)
 
-		winnerText += "next round will start shortly..."
-		_, _ = fmt.Fprint(v, myFigure.String()+winnerText)
+		if message.Type == chat.GameFinished {
 
-		ui.startCountDown(message.RoundOver.Winners[0].Order, message.RoundOver.Winners[0].Name)
+			winnerText += "end table:\n\n"
+
+			for i, user := range message.RoundOver.Users {
+				winnerText += fmt.Sprintf("%d. %s %d Tokens\n", i+1, user.Name, user.Tokens)
+			}
+
+			winnerText += "\nTanks for playing!"
+			_, _ = fmt.Fprint(v, myFigure.String()+winnerText)
+
+		} else {
+			winnerText += "next round will start shortly..."
+			_, _ = fmt.Fprint(v, myFigure.String()+winnerText)
+
+			ui.startCountDown(message.RoundOver.Winners[0].Order, message.RoundOver.Winners[0].Name)
+		}
+
 	}
 	if _, err := ui.SetCurrentView("RoundOver"); err != nil {
 		return err
@@ -118,25 +138,8 @@ func (ui *UI) startCountDown(winnerOrder int, winnerName string) {
 
 }
 
-func (ui *UI) ShowGameFinishedView(_ *gocui.Gui, message chat.Message) error {
-	maxX, maxY := ui.Size()
-	//name := fmt.Sprintf("v%v", 0)
-	//0, 0, maxX-25, maxY-30
-	v, err := ui.SetView("GameOver", 0, 0, maxX-1, maxY-1)
-	if err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		v.Wrap = true
-		v.Title = "Round over"
-		v.Frame = false
-
-		fmt.Fprintln(v, "Game over")
-	}
-	if _, err := ui.SetCurrentView("GameOver"); err != nil {
-		return err
-	}
-	return nil
+func (ui *UI) ShowGameFinishedView(g *gocui.Gui, message chat.Message) error {
+	return ui.ShowRoundFinishedView(g, message)
 }
 
 func (ui *UI) StartNewRound(winnerOrder int) error {

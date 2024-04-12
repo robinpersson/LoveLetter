@@ -419,7 +419,7 @@ func (s *Supervisor) IsGameOver() bool {
 		user := s.GetPlayerByOrder(usersLeft[0].Order)
 
 		var spyWinner UserInfo
-		if hasSpy(*user) {
+		if hasPlayedOrDiscardedSpy(*user) {
 			user.Tokens += 1
 			spyWinner = UserInfo{Name: user.Name}
 		}
@@ -427,15 +427,10 @@ func (s *Supervisor) IsGameOver() bool {
 		// We have a round winner
 		user.Tokens += 1
 
+		winners := []UserInfo{{Name: user.Name, Order: user.Order}}
 		roundOver := RoundOver{
-			Winners:   []UserInfo{{Name: user.Name, Order: user.Order}},
+			Winners:   winners,
 			SpyWinner: spyWinner,
-			//WinnerCard: CardInfo{
-			//	Value:       (*user.Cards.Current).Value(),
-			//	Name:        (*user.Cards.Current).Name(),
-			//	Description: (*user.Cards.Current).ToString(),
-			//	Index:       0,
-			//},
 			OutCard: CardInfo{
 				Value:       s.Game.Deck.FaceDownCard().Value(),
 				Name:        s.Game.Deck.FaceDownCard().Name(),
@@ -445,13 +440,7 @@ func (s *Supervisor) IsGameOver() bool {
 		}
 
 		if user.Tokens >= s.Game.FavorTokens {
-			s.BroadcastText("Game over", "Game control")
-			time.Sleep(time.Millisecond * 200)
-			s.Broadcast(&Message{
-				Type:      GameFinished,
-				From:      "Game control",
-				RoundOver: roundOver,
-			})
+			s.gameOver(roundOver, []*User{user})
 		} else {
 			s.BroadcastText("Round over... wait for summary", "Game control")
 			time.Sleep(time.Millisecond * 5000)
@@ -474,7 +463,7 @@ func (s *Supervisor) IsGameOver() bool {
 		winners := getWinners(usersLeft)
 		spyCount := 0
 		for _, winner := range winners {
-			if hasSpy(*winner) {
+			if hasPlayedOrDiscardedSpy(*winner) {
 				spyCount++
 			}
 
@@ -492,7 +481,7 @@ func (s *Supervisor) IsGameOver() bool {
 
 		if spyCount == 1 {
 			for _, winner := range winners {
-				if hasSpy(*winner) {
+				if hasPlayedOrDiscardedSpy(*winner) {
 					spyWinner = UserInfo{Name: winner.Name}
 					winner.Tokens += 1
 					if winner.Tokens >= s.Game.FavorTokens {
@@ -522,17 +511,7 @@ func (s *Supervisor) IsGameOver() bool {
 		}
 
 		if gameOver {
-			gameWinners := getGameWinners(winners)
-			var gameWinnerUsers []UserInfo
-			for _, winner := range gameWinners {
-				gameWinnerUsers = append(gameWinnerUsers, UserInfo{Name: winner.Name})
-			}
-			roundOver.GameWinners = gameWinnerUsers
-			s.Broadcast(&Message{
-				Type:      GameFinished,
-				From:      "Game control",
-				RoundOver: roundOver,
-			})
+			s.gameOver(roundOver, winners)
 		} else {
 			s.BroadcastText("Round over... wait for summary", "Game control")
 			time.Sleep(time.Millisecond * 2000)
@@ -548,6 +527,31 @@ func (s *Supervisor) IsGameOver() bool {
 	}
 
 	return false
+}
+
+func (s *Supervisor) gameOver(roundOver RoundOver, winners []*User) {
+	sort.Slice(s.Users, func(i, j int) bool {
+		return s.Users[i].Tokens > s.Users[j].Tokens
+	})
+	var userInfos []UserInfo
+	for _, user := range s.Users {
+		userInfos = append(userInfos, UserInfo{Name: user.Name, Tokens: user.Tokens})
+	}
+	roundOver.Users = userInfos
+
+	gameWinners := getGameWinners(winners)
+	var gameWinnerUsers []UserInfo
+	for _, winner := range gameWinners {
+		gameWinnerUsers = append(gameWinnerUsers, UserInfo{Name: winner.Name})
+	}
+	roundOver.GameWinners = gameWinnerUsers
+	s.BroadcastText("Round over... wait for summary", "Game control")
+	time.Sleep(time.Millisecond * 2000)
+	s.Broadcast(&Message{
+		Type:      GameFinished,
+		From:      "Game control",
+		RoundOver: roundOver,
+	})
 }
 
 func getWinners(users []*User) []*User {
@@ -584,11 +588,11 @@ func getGameWinners(users []*User) []*User {
 	return groupedUsers[sortedKeys[0]]
 }
 
-func hasSpy(user User) bool {
+func hasPlayedOrDiscardedSpy(user User) bool {
 
-	if (*user.Cards.Current).Name() == "Spy" {
-		return true
-	}
+	//if (*user.Cards.Current).Name() == "Spy" {
+	//	return true
+	//}
 
 	for _, cc := range user.Cards.Played {
 		if cc.Name() == "Spy" {
