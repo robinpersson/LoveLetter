@@ -223,11 +223,10 @@ func (u *User) Read() {
 
 		switch message.Type {
 		case StartGame:
-			//TODO: remove comments
-			//if len(u.Supervisor.Users) < 3 {
-			//	u.Write(NewMessage(Regular, "Game control", "Minimum players are 3\n"))
-			//	return
-			//}
+			if len(u.Supervisor.Users) < 2 {
+				u.Write(NewMessage(Regular, "Game control", "Minimum players are 2\n"))
+				return
+			}
 			if !u.Supervisor.Game.Started {
 				_ = u.Supervisor.StartGame(u)
 			} else {
