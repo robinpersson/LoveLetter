@@ -173,6 +173,9 @@ func (u *User) PrintPlayActions() {
 				Index:       0,
 			}}
 		} else {
+			u.Cards.Current = pickedCard
+			u.Cards.Picked = currentCard
+
 			m.Cards = []CardInfo{{
 				Value:       (*pickedCard).Value(),
 				Name:        (*pickedCard).Name(),
