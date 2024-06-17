@@ -66,6 +66,7 @@ func (d *deck) Shuffle(nrOfPlayers int) {
 
 	if nrOfPlayers == 2 {
 		d.faceUpCards = d.cards[3:]
+		d.cards = d.cards[3:]
 	}
 
 	d.cards = d.cards[1:]

@@ -106,7 +106,7 @@ func (s *Supervisor) Quit(user *User) {
 
 	s.Broadcast(notification)
 
-	s.Broadcast(NewMessage(Regular, user.Name, "disconnected"))
+	s.Broadcast(NewMessage(Regular, user.Name, "disconnected\n"))
 }
 
 func (s *Supervisor) CurrentUsers() string {

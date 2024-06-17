@@ -16,6 +16,7 @@ func (ui *UI) ShowPickCardsView(message chat.Message) error {
 	yStart := maxY - int(float64(maxY)*0.84)
 	items := 2
 	width := maxX - int(float64(maxX)*0.3)
+	ui.clearGuessCardBindings()
 
 	if action, err := ui.SetView(ActionsWidget, 0, maxY-yStart-items, width, maxY-yStart+1); err != nil {
 		if err != gocui.ErrUnknownView {
